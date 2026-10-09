@@ -1,0 +1,9 @@
+flowchart TD
+    BS["Base salary snapshot"] --> NET
+    CP["Commission percentage snapshot"] --> CM["Commission on patients the employee originally brought"]
+    CM --> BASE["Calculation base: Q-FIN-2 OPEN, no implementation yet"]
+    BASE --> NET["Net = Base + Commission + Bonus - Deductions"]
+    BO["Bonus"] --> NET
+    DE["Deductions"] --> NET
+    NET --> FIN["Finalize: disabled behind a flag until Q-FIN-2"]
+    FIN --> VIEW["Employee sees only own payroll, Manager sees all"]

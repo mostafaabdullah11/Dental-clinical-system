@@ -1,0 +1,8 @@
+flowchart TD
+    DE["Doctor Earnings from collections, including fixed-lab cases"] --> SEL["Manager drafts payroll for Doctor and period"]
+    SEL --> IT["Items: earnings not in any payroll"]
+    IT --> ADJ["Adjustments"]
+    ADJ --> FINAL["Finalize: payout columns sealed"]
+    FINAL --> PAID["Mark paid, paid date recorded"]
+    PEND["Pending Doctor Attribution, Q-FIN-9"] -.->|"not included"| IT
+    CHG["Later rate change"] -.->|"never recalculates"| FINAL

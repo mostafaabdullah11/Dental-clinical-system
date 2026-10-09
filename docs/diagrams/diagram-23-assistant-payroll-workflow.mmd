@@ -1,0 +1,21 @@
+flowchart TD
+    MGR["Manager"] --> REC["Assistant staff record (Staff.Manage), no user account"]
+    MGR --> SAL["Set current salary (Staff.AssistantSalary.Configure), audited"]
+    REC --> CUR["current_salary"]
+    SAL --> CUR
+    MGR --> DRAFT["Create payroll draft for a period (Payroll.Assistant.ManageAll)"]
+    CUR --> SNAP["Salary snapshot copied into the payroll"]
+    DRAFT --> SNAP
+    SNAP --> FA["final_amount = salary_snapshot, no free amount"]
+    FA --> CHK{"Needs partial-period or mid-period calculation?"}
+    CHK -->|"yes, Q-PAY-ASST-2 OPEN"| BLK["Cannot be finalized, no proration"]
+    CHK -->|"no"| FIN["Finalize: snapshot sealed, never recalculated"]
+    FIN --> PAID["Mark paid: paid date recorded"]
+    FIN --> EXP["Assistant Payroll Expense"]
+    PAID --> EXP
+    EXP --> RNG{"Report range fully contains the payroll period?"}
+    RNG -->|"yes"| RES["Estimated Clinic Operating Result"]
+    RNG -->|"partial overlap, Q-PAY-ASST-1 OPEN"| INC["Line PENDING / NOT ALLOCATED, result INCOMPLETE"]
+    GR["Clinic Gross Revenue, never reduced by Assistant salary"] --> RES
+    SP["Sales Salary / Commission"] --> RES
+    OE["Clinic Operating Expenses"] --> RES

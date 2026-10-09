@@ -1,0 +1,8 @@
+flowchart TD
+    D["Doctor creates referral: Surgery, Implant, Orthodontics, Prosthetics, Other"] --> N["Status New, appears to Sales and notifies Sales"]
+    N --> C["Sales contacts patient"]
+    C --> CT["Status Contacted"]
+    CT --> B["Booked"]
+    CT --> LOST["Lost"]
+    B --> CO["Completed"]
+    C -.-> FU["Follow-up with contact attempts recorded"]

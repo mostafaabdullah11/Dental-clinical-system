@@ -1,0 +1,60 @@
+erDiagram
+    CASE_WORK_ITEMS |o--o| PATIENT_CHARGES : "one charge per work item"
+    PATIENTS ||--o{ PATIENT_CHARGES : billed
+    PATIENTS ||--o{ PAYMENTS : pays
+    PAYMENTS ||--o{ PAYMENT_ALLOCATIONS : split
+    PATIENT_CHARGES ||--o{ PAYMENT_ALLOCATIONS : receives
+    PAYMENT_ALLOCATIONS |o--o| DOCTOR_EARNINGS : "unless held"
+    DOCTORS ||--o{ DOCTOR_EARNINGS : attributed
+    DOCTOR_EARNINGS |o--o| REVENUE_DISTRIBUTIONS : "completion, may be pending"
+    PATIENT_CHARGES ||--o{ ATTRIBUTION_HOLDS : "Q-FIN-9"
+    ATTRIBUTION_HOLDS ||--o{ PENDING_DOCTOR_ATTRIBUTIONS : covers
+    PAYMENT_ALLOCATIONS |o--o| PENDING_DOCTOR_ATTRIBUTIONS : "held allocation"
+    PATIENT_CHARGES ||--o{ CHARGE_ADJUSTMENTS : corrections
+    TREATMENT_CASES |o--o| FIXED_LAB_EXPENSES : "one per fixed-lab case"
+    FIXED_LAB_EXPENSES ||--o{ FIXED_LAB_REVISIONS : history
+    ORTHO_CASES |o--o| PATIENT_CHARGES : "one charge, once terms exist"
+    ORTHO_CASES ||--o{ ORTHO_INSTALLMENTS : schedule
+    ORTHO_INSTALLMENTS ||--o{ INSTALLMENT_PAYMENTS : "unused until Q-ORT-2"
+    PAYMENT_ALLOCATIONS ||--o{ INSTALLMENT_PAYMENTS : consumed
+    DOCTORS ||--o{ DOCTOR_PAYROLLS : paid
+    DOCTOR_PAYROLLS ||--o{ DOCTOR_PAYROLL_ITEMS : contains
+    DOCTOR_EARNINGS ||--o| DOCTOR_PAYROLL_ITEMS : "paid once"
+    DOCTOR_PAYROLLS ||--o{ DOCTOR_PAYROLL_ADJUSTMENTS : has
+    SALES_EMPLOYEES ||--o{ SALES_PAYROLLS : paid
+    SALES_PAYROLLS ||--o{ SALES_PAYROLL_COMMISSION_ITEMS : contains
+    SALES_PAYROLLS ||--o{ SALES_PAYROLL_ADJUSTMENTS : has
+    ASSISTANTS ||--o{ ASSISTANT_PAYROLLS : "paid; periods never overlap"
+    EXPENSE_CATEGORIES ||--o{ CLINIC_EXPENSES : classifies
+    CLINIC_EXPENSES |o--o| CLINIC_EXPENSES : "adjusts"
+    ASSISTANTS {
+        uuid id PK
+        text full_name
+        numeric current_salary
+        boolean is_active
+    }
+    ASSISTANT_PAYROLLS {
+        uuid id PK
+        date period_start
+        date period_end
+        numeric salary_snapshot
+        numeric final_amount
+        text status
+    }
+    PATIENT_CHARGES {
+        uuid id PK
+        numeric original_price
+        numeric discount_amount
+        numeric final_price
+    }
+    DOCTOR_EARNINGS {
+        uuid id PK
+        numeric allocated_amount
+        numeric doctor_share
+    }
+    REVENUE_DISTRIBUTIONS {
+        uuid id PK
+        numeric doctor_share
+        numeric lab_amount
+        numeric clinic_share
+    }

@@ -1,0 +1,9 @@
+flowchart TD
+    V["Visit finalized"] --> R["Feedback request created: Pending"]
+    R --> Q["Sales feedback queue and notification"]
+    Q --> L["Sales issues website link (fresh token)"]
+    L --> S["Marked Sent: channel, sender, date"]
+    S --> W["Patient opens clinic website and submits"]
+    W --> SUB["Submitted: rating and comment"]
+    S -.->|"expiry period Q-FDB-1 OPEN, job inert"| EXP["Expired"]
+    L -.->|"V1 manual, automated channels future"| FUT["WhatsApp, SMS, Email via channel abstraction"]

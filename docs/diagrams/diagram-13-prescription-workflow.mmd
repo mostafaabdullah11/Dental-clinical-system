@@ -1,0 +1,8 @@
+flowchart TD
+    V["Own visit, not finalized"] --> RX["Create prescription"]
+    RX --> IT["Add medications: dosage, frequency, duration, instructions"]
+    IT --> ED["Editable while visit is not finalized"]
+    ED --> FIN["Visit finalized: record protected"]
+    FIN --> VW["All Doctors may view and print"]
+    FIN -.->|"correction after finalization: workflow OPEN Q-CLN-1, audited"| COR["No silent overwrite"]
+    VW --> PDF["Print or PDF from print model: no patient contact data"]

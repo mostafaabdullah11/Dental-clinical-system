@@ -1,0 +1,20 @@
+flowchart TD
+    subgraph PL["Planners (every 15 min)"]
+        J1["J1 Appointments tomorrow, Implant follow-ups"]
+        J2["J2 Ortho installments due tomorrow (charge outstanding)"]
+        J3["J3 Follow-ups due"]
+    end
+    EV["Event: new referral, new feedback request"]
+    PL --> ENQ["Enqueue with dedupe key, ON CONFLICT DO NOTHING"]
+    EV --> ENQ
+    ENQ --> PEN["Pending"]
+    PEN --> J4["J4 Dispatcher every minute: one transaction per item, SKIP LOCKED"]
+    J4 --> VAL{"Source still valid, recipient active?"}
+    VAL -->|"no"| CAN["Cancelled"]
+    VAL -->|"yes"| SEND["InAppChannel delivery"]
+    SEND -->|"ok"| SENT["Sent"]
+    SEND -->|"error"| FAIL["Failed, retry_count + 1, committed"]
+    FAIL --> J5["J5 Retry every 5 min while retry_count < 5"]
+    J5 --> PEN
+    FAIL -->|"5 failures"| ALERT["Alert"]
+    J7["J7 operations health"] -.-> ALERT

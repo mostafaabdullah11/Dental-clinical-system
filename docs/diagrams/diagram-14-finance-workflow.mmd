@@ -1,0 +1,18 @@
+flowchart TD
+    WI["Work item: Doctor, price, percentage snapshot"] --> CH["Patient Charge (insert only)"]
+    CH --> PM["Payment recorded by Sales or Manager"]
+    PM --> AL["Payment Allocation to charge"]
+    AL --> HOLD{"Attribution hold on charge?"}
+    HOLD -->|"no"| DE["Doctor Earning = collected x snapshot"]
+    HOLD -->|"yes, Q-FIN-9 OPEN"| PEND["Pending Doctor Attribution, no earning"]
+    DE --> CMP{"Lab and Clinic completion computable?"}
+    CMP -->|"general lab, unambiguous rate"| RD["Revenue Distribution: Doctor + Lab + Clinic = collected"]
+    CMP -->|"fixed lab Q-FIN-1 or rate ambiguity W2"| PC["Pending completion"]
+    AL --> COL["Collected"]
+    CH --> BILL["Billed"]
+    BILL --> OUT["Outstanding = Billed - Collected"]
+    COL --> OUT
+    RD --> REP["Reports"]
+    PC --> REP
+    PEND --> REP
+    OUT --> REP

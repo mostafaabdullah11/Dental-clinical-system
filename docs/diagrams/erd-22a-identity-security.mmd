@@ -1,0 +1,29 @@
+erDiagram
+    USERS ||--|| USER_ROLES : "one role per account"
+    ROLES ||--o{ USER_ROLES : has
+    ROLES ||--o{ ROLE_PERMISSIONS : grants
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : in
+    USERS |o--o| DOCTORS : "staff link"
+    USERS |o--o| SALES_EMPLOYEES : "staff link"
+    USERS |o--o{ AUDIT_LOG : acts
+    USERS {
+        uuid id PK
+        string user_name
+        bool is_active
+    }
+    DOCTORS {
+        uuid id PK
+        numeric current_percentage
+        bool is_active
+    }
+    SALES_EMPLOYEES {
+        uuid id PK
+        numeric commission_percentage
+        bool is_active
+    }
+    AUDIT_LOG {
+        bigint id PK
+        string action
+        string entity_type
+        bool is_restricted
+    }

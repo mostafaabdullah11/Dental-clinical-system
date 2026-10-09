@@ -1,0 +1,31 @@
+flowchart TD
+    S["Open patient"] --> V["Start visit (Draft / In Progress)"]
+    V --> TA["Select tooth or area"]
+    TA --> PR{"Procedure"}
+    PR --> RC["Root Canal"]
+    PR --> FI["Filling: GIC or Composite (then Anterior / Posterior)"]
+    PR --> EX["Extraction: Simple / Surgical / Advanced"]
+    PR --> PE["Pediatric: Pulpotomy, Pulpectomy, Space Maintainer, SS Crown, Extraction, Zircon Crown, Other"]
+    PR --> IM["Implant"]
+    PR --> FP["Fixed Prosthetics: PFM / Zirconia / E-max"]
+    PR --> RP["Removable Prosthetics: Complete or Partial, Flexible or Standard Acrylic"]
+    PR --> SC["Scaling, Deep Cleaning, Polishing, Laser Bleaching (Basic / High Quality)"]
+    PR --> OR["Orthodontics: Upper, Lower, Appliance"]
+    PR --> OT["Other: free text"]
+    RC --> PRICE
+    FI --> PRICE
+    EX --> PRICE
+    PE --> PRICE
+    IM --> LAB["Fixed lab entered once per case"]
+    FP --> LAB
+    RP --> LAB
+    LAB --> PRICE
+    SC --> PRICE
+    OR --> PRICE
+    OT --> PRICE
+    PRICE["Doctor enters price for own work item (no discount)"] --> N["Clinical notes"]
+    N --> RX{"Prescription needed?"}
+    RX -->|"yes"| RXC["Create prescription"]
+    RX -->|"no"| NA
+    RXC --> NA{"Next appointment or referral?"}
+    NA --> FIN["Finalize visit"]

@@ -1,0 +1,14 @@
+flowchart LR
+    M["Manager"]
+    D["Doctor"]
+    S["Sales / Reception"]
+    P["Patient (business entity, no login)"]
+    SYS["Dental Clinic Management System"]
+    WEB["Clinic website (feedback form)"]
+
+    M -->|"configure, finance, reports, audit"| SYS
+    D -->|"clinical work, own-work finance"| SYS
+    S -->|"contact data, booking, payments, CRM"| SYS
+    P -.->|"is treated and billed, never signs in"| SYS
+    P -->|"submits feedback"| WEB
+    WEB -.->|"result reaches system by token endpoint or manual marking by Sales"| SYS

@@ -1,0 +1,19 @@
+erDiagram
+    PATIENTS ||--|| PATIENT_CONTACTS : "1 to 1"
+    SALES_EMPLOYEES |o--o{ PATIENT_CONTACTS : "original owner, nullable"
+    PATIENTS ||--o{ PATIENT_DOCTOR_ASSIGNMENTS : history
+    DOCTORS ||--o{ PATIENT_DOCTOR_ASSIGNMENTS : "current or previous"
+    DOCTORS ||--o{ AVAILABILITY_WEEKS : has
+    AVAILABILITY_WEEKS ||--o{ AVAILABILITY_RANGES : contains
+    PATIENTS ||--o{ APPOINTMENTS : has
+    DOCTORS ||--o{ APPOINTMENTS : attends
+    APPOINTMENTS |o--o| APPOINTMENTS : "previous_appointment"
+    SALES_EMPLOYEES ||--o{ LEADS : "original owner"
+    LEADS |o--o| PATIENTS : "converted to"
+    PATIENTS ||--o{ REFERRALS : has
+    DOCTORS ||--o{ REFERRALS : creates
+    PATIENTS |o--o{ FOLLOW_UPS : about
+    SALES_EMPLOYEES ||--o{ FOLLOW_UPS : assigned
+    FOLLOW_UPS ||--o{ FOLLOW_UP_CONTACT_ATTEMPTS : "append only"
+    PATIENTS |o--o{ NOTIFICATIONS : "related, optional"
+    PATIENTS ||--o{ FEEDBACK_REQUESTS : has

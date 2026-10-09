@@ -1,0 +1,11 @@
+flowchart TD
+    W["Work type"] --> T{"Lab model"}
+    T -->|"General work"| G["Manager sets general lab percentage"]
+    G --> G2["Lab = collected x lab percent, taken from the total"]
+    G2 --> G3["Rate selection for running cases: W2 OPEN"]
+    T -->|"Implant, Fixed or Removable Prosthetics"| F["Doctor enters initial fixed lab, one per case"]
+    F --> F2["Manager edits: new revision, audited"]
+    F2 --> F3["Allocation across payments, charges, Doctors: Q-FIN-1 OPEN"]
+    F2 --> F4["Effect on earlier completions: Q-FIN-6 OPEN"]
+    G2 --> DS["Doctor Share is never reduced by lab"]
+    F3 --> DS

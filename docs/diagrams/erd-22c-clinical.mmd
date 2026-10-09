@@ -1,0 +1,22 @@
+erDiagram
+    PATIENTS ||--o{ VISITS : has
+    DOCTORS ||--o{ VISITS : performs
+    VISITS |o--o| APPOINTMENTS : "optional link"
+    PATIENTS ||--o{ TREATMENT_CASES : has
+    PROCEDURE_TYPES ||--o{ TREATMENT_CASES : "type of"
+    VISITS ||--o{ TREATMENT_RECORDS : contains
+    TREATMENT_CASES ||--o{ TREATMENT_RECORDS : "spans visits"
+    TREATMENT_CASES ||--o{ CASE_WORK_ITEMS : "billable work"
+    DOCTORS ||--o{ CASE_WORK_ITEMS : "performing doctor"
+    TREATMENT_CASES ||--o{ TREATMENT_STEPS : "root canal"
+    TREATMENT_CASES ||--o{ ROOT_CANAL_MEASUREMENTS : canals
+    TREATMENT_CASES |o--o| IMPLANT_DETAILS : implant
+    TREATMENT_CASES |o--o| ORTHO_CASES : orthodontic
+    PATIENTS ||--o{ PRESCRIPTIONS : has
+    VISITS ||--o{ PRESCRIPTIONS : has
+    PRESCRIPTIONS ||--o{ PRESCRIPTION_ITEMS : contains
+    CASE_WORK_ITEMS {
+        uuid id PK
+        numeric doctor_percentage_snapshot
+        numeric entered_price
+    }

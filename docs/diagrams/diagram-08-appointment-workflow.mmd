@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> Scheduled
+    Scheduled --> Confirmed
+    Scheduled --> InTreatment: Doctor starts the linked visit
+    Confirmed --> InTreatment: Doctor starts the linked visit
+    InTreatment --> Completed: visit finalized
+    Scheduled --> Cancelled
+    Confirmed --> Cancelled
+    Scheduled --> NoShow
+    Confirmed --> NoShow
+    Scheduled --> Rescheduled: new appointment created, old kept
+    Confirmed --> Rescheduled
+    Completed --> [*]
+    Cancelled --> [*]
+    NoShow --> [*]
+    Rescheduled --> [*]

@@ -1,0 +1,16 @@
+flowchart TB
+    NET["Internet"] -->|"443 HTTPS, 80 redirect"| WEB
+    subgraph VM["Linux VM (Docker)"]
+        WEB["web: Caddy + SPA"] --> API["api"]
+        WRK["worker: Hangfire (dashboard on localhost only)"]
+        MIG["migrator (deploy time only)"]
+        BKP["backup (nightly one-shot)"]
+    end
+    API -->|"TLS verify-full"| PG[("Managed PostgreSQL + point-in-time recovery")]
+    WRK --> PG
+    MIG --> PG
+    BKP --> PG
+    BKP -->|"encrypted, write-only"| OFF["Off-site object-locked storage, different account"]
+    MON["External uptime and heartbeat monitor"] -.-> WEB
+    VM -.->|"heartbeats, scrubbed errors"| MON
+    GH["GitHub Actions"] -->|"forced-command SSH"| VM

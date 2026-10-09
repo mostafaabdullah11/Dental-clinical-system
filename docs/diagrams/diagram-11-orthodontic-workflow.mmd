@@ -1,0 +1,11 @@
+flowchart TD
+    A["Orthodontic case created by Doctor: Upper, Lower or Appliance"] --> AP{"Appliance?"}
+    AP -->|"yes"| FT["Appliance type: free text"]
+    AP -->|"no"| TERMS
+    FT --> TERMS["Total price, deposit, months (who enters: OPEN)"]
+    TERMS --> CHG["Ortho charge established"]
+    CHG --> SCH["Installment schedule generated, one row per installment"]
+    SCH --> PAYM["Sales records payment, allocated to the ortho charge"]
+    PAYM --> SPLIT["Doctor share at the case percentage snapshot"]
+    PAYM -.->|"installment application pending Q-ORT-2"| APPL["Per-installment status not computed yet"]
+    SCH --> REM["Reminder to Sales one day before due date, while the charge has an outstanding balance"]

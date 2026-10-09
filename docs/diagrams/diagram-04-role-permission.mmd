@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph Roles
+        DOC["DOCTOR"]
+        SAL["SALES_RECEPTION"]
+        MAN["MANAGER"]
+    end
+    subgraph Keys["Permission groups"]
+        K1["Clinical read: all patients"]
+        K2["Clinical write: own editable visit and own work (Manager: any non-finalized)"]
+        K3["Own-work finance and own payroll"]
+        K4["Contact data, booking, payments, CRM"]
+        K5["Sales clinical whitelist and own compensation"]
+        K6["Config, staff, schedules, reassignment"]
+        K7["Management finance, expenses, reports, audit"]
+        K8["Notifications inbox"]
+    end
+    DOC --> K1
+    DOC --> K2
+    DOC --> K3
+    SAL --> K4
+    SAL --> K5
+    SAL --> K8
+    MAN --> K1
+    MAN --> K2
+    MAN --> K4
+    MAN --> K6
+    MAN --> K7
+    MAN --> K8
+    DOC -.-x|"never"| K4

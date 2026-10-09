@@ -1,0 +1,13 @@
+flowchart TD
+    P["Patient"] --> AD["Assigned Doctor"]
+    AD --> IP["Implant procedure, tooth or area"]
+    IP --> OPT["Optional: Bone Grafting, Membrane"]
+    OPT --> H["Healing period: exactly one of 1 to 6 months"]
+    H --> FL["Doctor enters initial Fixed Lab Expense (one per case)"]
+    FL --> ME["Manager may edit: new revision, audited"]
+    H --> NA["Doctor selects next appointment: date, time, reason"]
+    NA --> CAL["Appointment Calendar"]
+    NA --> DS["Doctor schedule"]
+    NA --> SS["Sales schedule"]
+    SS --> RM["Reminder to Sales the day before"]
+    RM --> FU["Follow-up visit"]

@@ -1,0 +1,75 @@
+flowchart BT
+    subgraph L1["Level 1"]
+        Audit
+        Configuration
+        Identity
+    end
+    subgraph L2["Level 2"]
+        Staff
+        Notifications
+        Expenses
+    end
+    subgraph L3["Level 3"]
+        Patients
+    end
+    subgraph L4["Level 4"]
+        Scheduling
+        Crm
+        Finance
+    end
+    subgraph L5["Level 5"]
+        Clinical
+    end
+    subgraph L6["Level 6"]
+        Prescriptions
+        Orthodontics
+        Feedback
+    end
+    subgraph L7["Level 7"]
+        Payroll
+        Reporting
+    end
+
+    Staff --> Identity
+    Staff --> Audit
+    Notifications --> Identity
+    Notifications --> Configuration
+    Expenses --> Identity
+    Expenses --> Audit
+    Expenses --> Configuration
+    Patients --> Staff
+    Patients --> Audit
+    Scheduling --> Patients
+    Scheduling --> Staff
+    Scheduling --> Notifications
+    Scheduling --> Configuration
+    Crm --> Patients
+    Crm --> Staff
+    Crm --> Notifications
+    Finance --> Patients
+    Finance --> Staff
+    Finance --> Configuration
+    Finance --> Audit
+    Clinical --> Patients
+    Clinical --> Staff
+    Clinical --> Scheduling
+    Clinical --> Crm
+    Clinical --> Finance
+    Clinical --> Audit
+    Clinical --> Configuration
+    Prescriptions --> Clinical
+    Prescriptions --> Patients
+    Prescriptions --> Staff
+    Orthodontics --> Clinical
+    Orthodontics --> Finance
+    Orthodontics --> Scheduling
+    Orthodontics --> Notifications
+    Orthodontics --> Staff
+    Feedback --> Clinical
+    Feedback --> Patients
+    Feedback --> Notifications
+    Feedback --> Configuration
+    Payroll --> Finance
+    Payroll --> Staff
+    Payroll --> Patients
+    Payroll --> Audit

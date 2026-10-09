@@ -1,0 +1,13 @@
+flowchart TD
+    A["Select tooth, start case"] --> B["Record canal lengths 1 to 5 in mm"]
+    B --> S1["Access Cavity"]
+    S1 --> S2["Mechanical Preparation"]
+    S2 --> S3["Obturation"]
+    S3 --> Q{"Post and Core needed?"}
+    Q -->|"yes"| S4["Post and Core (optional)"]
+    Q -->|"no"| E["Case Completed"]
+    S4 --> E
+    S1 -.-> VN["Each step may happen in a different visit, and steps persist"]
+    S2 -.-> VN
+    S3 -.-> VN
+    VN -.-> OD["Another Doctor sees completed and pending steps (read only)"]

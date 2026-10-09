@@ -1,0 +1,17 @@
+flowchart TB
+    SPA["React + TypeScript SPA"]
+    PROXY["Caddy reverse proxy (HTTPS)"]
+    subgraph API["Clinic.Api (one process)"]
+        direction TB
+        MODS["Identity, Audit, Configuration, Staff, Patients, Scheduling, Clinical, Prescriptions, Orthodontics, Crm, Finance, Expenses, Payroll, Notifications, Feedback, Reporting"]
+    end
+    subgraph WRK["Clinic.Worker (Hangfire)"]
+        JOBS["Planners J1-J3, Dispatcher J4, Retry J5, Feedback expiry J6, Operations health J7"]
+        NE["Notification engine (InAppChannel)"]
+    end
+    DB[("Managed PostgreSQL, one schema per module")]
+
+    SPA -->|"HTTPS"| PROXY --> API
+    API --> DB
+    WRK --> DB
+    JOBS --> NE

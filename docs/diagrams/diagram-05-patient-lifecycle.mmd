@@ -1,0 +1,10 @@
+flowchart LR
+    L["Lead"] --> P["Patient"]
+    P --> A["Appointment"]
+    A --> D["Visit / Doctor treatment"]
+    D --> T["Treatment"]
+    T --> PAY["Payment"]
+    PAY --> F["Follow-Up"]
+    F --> FB["Feedback"]
+    W["Walk-in"] -.->|"direct registration, no Original Sales Employee assumed"| P
+    L -.->|"Original Sales Employee preserved"| P
