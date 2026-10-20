@@ -1,7 +1,9 @@
 flowchart TD
-    M["Manager adds expense: date, category, description, amount, method, vendor, notes"] --> ED["Editable and audited"]
-    ED --> ADJ["Corrections as adjustment rows, no deletion"]
-    ED --> FL["Filters and history"]
-    ED --> RPT["Expense reports"]
+    S["Sales records a Materials / Medical Supplies or Petty / Miscellaneous expense (create only)"] --> EX["Expense stored with creator user, role and time (never overwritten by a later edit)"]
+    LK["Sales reads the allowed categories (read-only lookup)"] --> S
+    M["Manager adds any expense: date, category, description, amount, method, vendor, notes"] --> EX
+    EX --> ED["Manager edits directly; every edit audited (who, when, changed fields)"]
+    ED --> FL["Manager filters and history"]
+    ED --> RPT["Manager expense reports (Materials and Petty shown as separate lines)"]
     RPT --> RES["Reduces Clinic result only, never a Doctor share"]
-    ED -.->|"finalization trigger undefined, attachments Q-EXP-1 OPEN"| NOTE["Not built"]
+    S -.-x|"no list, edit, category management or analytics"| RPT

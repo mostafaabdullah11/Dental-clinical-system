@@ -1,21 +1,28 @@
 flowchart TD
-    MGR["Manager"] --> REC["Assistant staff record (Staff.Manage), no user account"]
+    MGR["Manager (Assistant has no login or application access)"] --> REC["Assistant staff record (Staff.Manage), no user account"]
     MGR --> SAL["Set current salary (Staff.AssistantSalary.Configure), audited"]
+    MGR --> RATE["Configure overtime hourly rate (Staff.AssistantOvertimeRate.Configure), audited"]
+    MGR --> ATT["Record Attendance: one record per day (Staff.Attendance.Manage)"]
+    ATT -.->|"deducts nothing, creates no overtime"| NOP["Attendance alone changes no pay"]
+    MGR --> OT["Record approved overtime hours (Staff.AssistantOvertime.Manage)"]
+    RATE --> SNAPR["Hourly rate snapshot copied into the entry"]
+    OT --> SNAPR
+    SNAPR --> AMT["Overtime amount = approved hours x rate snapshot (later rate changes never recalculate)"]
     REC --> CUR["current_salary"]
     SAL --> CUR
-    MGR --> DRAFT["Create payroll draft for a period (Payroll.Assistant.ManageAll)"]
+    MGR --> DRAFT["Create monthly payroll draft (Payroll.Assistant.ManageAll)"]
     CUR --> SNAP["Salary snapshot copied into the payroll"]
     DRAFT --> SNAP
-    SNAP --> FA["final_amount = salary_snapshot, no free amount"]
-    FA --> CHK{"Needs partial-period or mid-period calculation?"}
-    CHK -->|"yes, Q-PAY-ASST-2 OPEN"| BLK["Cannot be finalized, no proration"]
-    CHK -->|"no"| FIN["Finalize: snapshot sealed, never recalculated"]
+    SNAP --> BP["Base Pay: salary snapshot for a normal full month; Manager enters it with a reason for a partial month (no /30, no proration)"]
+    AMT --> OTI["Overtime items of that month (each entry in at most one payroll)"]
+    DRAFT --> OTI
+    BP --> FA["Final amount = Base Pay + Overtime"]
+    OTI --> FA
+    FA --> FIN["Finalize after month end: sealed, never recalculated"]
     FIN --> PAID["Mark paid: paid date recorded"]
-    FIN --> EXP["Assistant Payroll Expense"]
+    FIN --> EXP["Assistant Payroll Expense (monthly reports: Base Pay and Overtime lines; Daily / Weekly allocate nothing)"]
     PAID --> EXP
-    EXP --> RNG{"Report range fully contains the payroll period?"}
-    RNG -->|"yes"| RES["Estimated Clinic Operating Result"]
-    RNG -->|"partial overlap, Q-PAY-ASST-1 OPEN"| INC["Line PENDING / NOT ALLOCATED, result INCOMPLETE"]
+    EXP --> RES["Estimated Clinic Operating Result"]
     GR["Clinic Gross Revenue, never reduced by Assistant salary"] --> RES
-    SP["Sales Salary / Commission"] --> RES
+    SP["Sales payroll"] --> RES
     OE["Clinic Operating Expenses"] --> RES

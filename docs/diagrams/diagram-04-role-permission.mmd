@@ -6,19 +6,32 @@ flowchart LR
     end
     subgraph Keys["Permission groups"]
         K1["Clinical read: all patients"]
-        K2["Clinical write: own editable visit and own work (Manager: any non-finalized)"]
+        K2["Clinical write: own editable visit and own work, controlled correction of own finalized visit (Manager: any non-finalized)"]
         K3["Own-work finance and own payroll"]
-        K4["Contact data, booking, payments, CRM"]
-        K5["Sales clinical whitelist and own compensation"]
-        K6["Config, staff, schedules, reassignment"]
-        K7["Management finance, expenses, reports, audit"]
+        K4["Contact data, booking, arrival, Confirm / Cancel / No Show, payments, CRM, ortho installment application"]
+        K5["Sales clinical whitelist (referral reason and destination, DOB, no Doctor notes) and own compensation"]
+        K9["Patient Medical History Intake: read (Doctor), read and edit (Sales, Manager)"]
+        K10["Discount on a pricing line before finalization (Finance.Discount.Set): Doctor own line, Sales through the pricing view, Manager"]
+        K12["Create Materials / Petty expense, read the allowed-categories lookup, record Patient Feedback (create only)"]
+        K6["Config, staff, accounts, set password, schedules, reassignment, assign unassigned leads"]
+        K13["Attendance, Assistant overtime and overtime rate, Assistant salary and payroll (Manager only)"]
+        K7["Management finance, all expenses, reports, feedback results, audit"]
+        K11["Corrections and revisions only, never initial entries: payment corrections, price and discount adjustments (non-ortho charges; an Ortho Total changes only through Orthodontics.Terms.Edit, never through a generic adjustment), ortho term edits and schedule changes (manual schedule adjustment: amounts, unpaid due dates, add, retire; never delete), fixed lab revision, Sales commission rate change for future collections (Manager only)"]
         K8["Notifications inbox"]
+        K14["Initial entries: work price, consultation fee, fixed lab amount, ortho terms stored during the Visit (Doctor only)"]
     end
     DOC --> K1
     DOC --> K2
     DOC --> K3
+    DOC --> K10
+    DOC --> K14
     SAL --> K4
     SAL --> K5
+    SAL --> K9
+    SAL --> K10
+    SAL --> K12
+    DOC --> K9
+    MAN --> K9
     SAL --> K8
     MAN --> K1
     MAN --> K2
@@ -26,4 +39,12 @@ flowchart LR
     MAN --> K6
     MAN --> K7
     MAN --> K8
+    MAN --> K10
+    MAN --> K11
+    MAN --> K12
+    MAN --> K13
     DOC -.-x|"never"| K4
+    MAN -.-x|"never"| K14
+    SAL -.-x|"never"| K14
+    SAL -.-x|"never"| K13
+    SAL -.-x|"never"| K7

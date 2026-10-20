@@ -1,378 +1,149 @@
 # OPEN_QUESTIONS.md
 
 **Design Baseline Version:** 1.1
-**Status:** PROPOSED FREEZE — AWAITING OWNER APPROVAL
+**Status:** OWNER APPROVED — FROZEN FOR V1 IMPLEMENTATION (approved 2026-10-20)
+**Last synchronization:** Owner approval and freeze (2026-10-20) after the final Orthodontic consistency correction; before that, the Final Orthodontics freeze correction after the final correction pass (see OWNER_REVIEW_NOTES.md for the full decision register and DESIGN_FREEZE.md). The Deposit / Number-of-Months edit behavior of an Orthodontic case is now ANSWERED (Q-ORT-5); the Sales commission-rate change question was answered earlier (Q-COMM-1).
 
-This is the single register of every decision the user has **not** made. None of these is answered, defaulted into a business rule, or silently implemented. Where the system must behave in some way meanwhile, the **CURRENT SYSTEM BEHAVIOR** field states exactly what that is, and it is always either "feature not built / no route mapped" or a purely technical seam that works under any future answer.
+This is the single and authoritative decision register of Design Baseline v1.1 (OWNER APPROVED — FROZEN FOR V1 IMPLEMENTATION). **All V1 business questions are answered.** Exactly two items are deferred, with a defined V1 behavior or a go-live timing, and **neither blocks V1 implementation**; no new open question is created by the freeze. This is the single register of questions. **Every question the Owner has answered is ANSWERED — OWNER DECISION and is not reopened.** Exactly **two deferred items remain**: **Q-ORT-3b** (what the system should do when the total price of an Orthodontic case is *decreased*; **DEFERRED / OPEN FOR FUTURE VERSION**; V1 has a defined behavior, rejection with `ortho.total_decrease_not_supported`, so it is not a V1 blocker) and **OPS-1** (the physical storage locations of the two backup recovery private keys; DEFERRED to go-live). Neither blocks implementation. The earlier Walk-In pool default (Q-PAT-1b) no longer exists: the Owner's final decision is that Walk-In / Direct work earns zero commission.
 
-Sources: Step 4 (original list), the later Step 9 reclassifications (Q-FIN-6 redefined, W2 reopened, Q-FIN-9 pending attribution), Step 11 (Q-ORT-2 not resolved via the API, appointment-status actor, walk-in Original Sales Employee), and the operational items from Steps 8, 12, 13, 14.
-
-**How the three groups were assigned.** The design as frozen contains no question that prevents starting implementation (every question is isolated behind a seam). "Blocks implementation now" therefore means: the answer is needed before the named module or screen can be **completed correctly** in the first implementation phases, or building it would force a guess. "Blocks a later module" means the gated work is scheduled later and the seam holds until then. "Non-blocking before V1 go-live" means no code waits for it, but go-live cannot happen without it. This is a sequencing judgement, not a business decision; reorder freely.
-
-Fields per item: **ID · AREA · QUESTION · WHY IT MATTERS · WHAT IT BLOCKS · CURRENT SYSTEM BEHAVIOR · WHEN IT MUST BE ANSWERED**.
+Labels: **CONFIRMED** = Owner decision. **TECHNICAL** = engineering needed to implement a confirmed rule safely. **DEFAULT** = veto-able technical default. **DEFERRED** = Owner decided it is decided later and does not block implementation.
 
 ---
 
-# GROUP 1: BLOCKS IMPLEMENTATION NOW
+# 1. REMAINING OPEN / DEFERRED
 
-### Q-UI-1
-- **AREA:** Frontend / localisation
-- **QUESTION:** Which UI language(s): Arabic, English, or bilingual?
-- **WHY IT MATTERS:** Arabic requires right-to-left layout and an i18n structure from the first screen; retrofitting RTL and string extraction is expensive and touches every component, print template and PDF.
-- **WHAT IT BLOCKS:** Frontend scaffolding (layout direction, i18n setup, fonts), prescription print layout, report/PDF templates.
-- **CURRENT SYSTEM BEHAVIOR:** API is language-neutral (codes, not messages; the SPA branches on `code`). No UI language is chosen; nothing in the backend depends on it.
-- **WHEN IT MUST BE ANSWERED:** Before the first frontend screen is built.
+### Q-ORT-3b — DEFERRED / OPEN FOR FUTURE VERSION: decrease of an Orthodontic case's total price
+- **Status:** **DEFERRED / OPEN FOR FUTURE VERSION.** Not a V1 blocker.
+- **AREA:** Orthodontics / Finance
+- **WHAT IS ANSWERED:** An *increase* adds a difference installment (Q-ORT-3). The schedule is Manager-editable (Q-ORT-1); Deposit / Months edits are handled by manual schedule adjustment (Q-ORT-5). The balance is always against the Effective Ortho Total (Gross − Discount).
+- **WHAT IS DEFERRED:** What the system should do when the Owner reduces the total price of an Orthodontic case after installments exist (which installments shrink; how collected money, Patient Credit and Doctor entitlement are treated).
+- **V1 BEHAVIOR (defined, not a gap):** a Total decrease (for example 20,000 → 18,000) is **rejected with `ortho.total_decrease_not_supported`**. There is no negative installment, no automatic reduction of installments, no `DiscountCorrection` / `PriceCorrection` workaround (the generic correction route refuses Orthodontic charges with `ortho.use_terms_edit`) and no silent rewrite. Nothing is built for a decrease.
+- **WHAT IT BLOCKS:** Nothing. It can be designed in a future version; the single place that relaxes is the V1 rejection in `Orthodontics.Terms.Edit` (and guard G9(b)).
 
-### Q-APP-1
-- **AREA:** Scheduling
-- **QUESTION:** What is the standard appointment duration? Does it vary by procedure? May appointments overlap?
-- **WHY IT MATTERS:** The confirmed rule "accidental double-booking is prevented" needs a definition of when two appointments conflict, and slot generation from availability ranges needs a slot length.
-- **WHAT IT BLOCKS:** Overlap-based conflict detection, slot generation from availability ranges, `default_appointment_minutes` setting, duration-aware calendar rendering.
-- **CURRENT SYSTEM BEHAVIOR:** `duration_minutes` is nullable. Double-booking is prevented only for the **same doctor and exact same start time** (partial unique index). `default_appointment_minutes` is unset. An overlap exclusion constraint can replace the unique index additively once defined.
-- **WHEN IT MUST BE ANSWERED:** Before the Scheduling module's booking and slot features are completed.
-
-### Q-CRM-1
-- **AREA:** CRM / follow-ups
-- **QUESTION:** What is the list of follow-up statuses, and which of them mean the follow-up is "open"?
-- **WHY IT MATTERS:** The user confirmed a follow-up "Status" field but never listed its values. The follow-up planner (J3), the Sales dashboard "pending follow-ups" count and the inactive-owner metric all depend on an "open" predicate.
-- **WHAT IT BLOCKS:** Completing job J3 (follow-up due notifications), the pending-follow-ups dashboard figure, and validation of follow-up status transitions.
-- **CURRENT SYSTEM BEHAVIOR:** Follow-up `status` is stored as text validated against a list in code (technical placeholder). Crm owns an `IsOpen` predicate that is not bound to a confirmed list.
-- **WHEN IT MUST BE ANSWERED:** Before the Crm module's follow-up workflow and J3 are completed.
-
-### Q-FIN-W1 (wiring point W1)
-- **AREA:** Finance / Clinical integration
-- **QUESTION:** When is a treatment charge established: (A) when the Doctor finalizes the visit containing the priced work item, (B) when Sales/Manager confirms the agreement, or (C) another moment? Also: who creates a consultation charge and where does its amount come from?
-- **WHY IT MATTERS:** It decides when "Billed" first appears and whether a step the user has not described (option B) must be built. Consultation fees cannot be recorded at all until the source of a consultation charge is known.
-- **WHAT IT BLOCKS:** Wiring `Finance.EstablishCharge` into the visit flow; consultation fee recording; therefore Billed/Outstanding for new work.
-- **CURRENT SYSTEM BEHAVIOR:** `EstablishCharge` exists as an internal command with a single call site; nothing calls it. No charge-establishment or consultation route is mapped. Doctor price entry is held on `case_work_items.entered_price`.
-- **WHEN IT MUST BE ANSWERED:** Before the Clinical–Finance integration is implemented (before any charge can exist).
-
-### Q-ACC-1
-- **AREA:** Identity / account recovery
-- **QUESTION:** How are password-reset links or codes delivered to staff (staff email, mobile, or another clinic-defined process)? Do staff have an email or mobile identity in the system?
-- **WHY IT MATTERS:** Reset tokens are generated, but without a delivery route a locked-out staff member (and every account after a restore lockdown) cannot recover. "Manager delivers the link" was withdrawn.
-- **WHAT IT BLOCKS:** An end-user password-reset initiation endpoint; the new-account communication process; the usability of `post-restore-lockdown`.
-- **CURRENT SYSTEM BEHAVIOR:** Delivery is a deployment/configuration detail through the channel abstraction; no staff email/mobile field exists; **no recovery-initiation endpoint is exposed**. Reset-token issuance is available only as an operator command. New accounts get a creator-supplied initial password with must-change-on-first-login.
-- **WHEN IT MUST BE ANSWERED:** Before the Identity module's password-reset flow is completed (and in any case before go-live).
-
----
-
-# GROUP 2: BLOCKS A LATER MODULE
-
-## Finance
-
-### Q-FIN-1
-- **AREA:** Finance / fixed lab
-- **QUESTION:** When a case's single fixed lab expense (Implant, Fixed Prosthetics, Removable Prosthetics) is paid for through several partial payments, charges and Doctors, how much of each payment is the Lab portion?
-- **WHY IT MATTERS:** It determines the Lab and Clinic Share attributed to each fixed-lab collection. A negative Clinic Share early in a case depends on it. It never affects Doctor Share.
-- **WHAT IT BLOCKS:** Lab and Clinic completion rows for fixed-lab allocations only; therefore the Lab and Clinic Share figures for implants and prostheses and the Clinic Gross Revenue contribution of those collections.
-- **CURRENT SYSTEM BEHAVIOR:** When attribution is clear, a Doctor earning is recorded immediately at the work's percentage snapshot (so Doctor Share and Doctor payroll are **not** blocked). No completion row is created; the remaining amount is shown as **Pending completion**. One fixed lab per case with full revision history is stored. A later versioned calculator backfills with no schema change. No validation exists for negative Clinic Share.
-- **WHEN IT MUST BE ANSWERED:** Before fixed-lab Lab/Clinic reporting is finalized (before Reporting is completed); not needed to build payments or payroll.
-
-### Q-FIN-W2 (wiring point W2)
-- **AREA:** Finance / general lab
-- **QUESTION:** Which general lab percentage applies to a payment: the rate in force when the case/charge began, or the rate at payment time (or another rule)?
-- **WHY IT MATTERS:** When the Manager changes the general lab percentage, payments on cases straddling the change are ambiguous.
-- **WHAT IT BLOCKS:** Lab/Clinic completion for general-lab cases that straddle a rate change.
-- **CURRENT SYSTEM BEHAVIOR:** Nothing is defaulted. A completion is generated only when every candidate rule gives the same answer (rate at the charge's `charged_at` equals the rate at the payment's `paid_at`); otherwise the completion stays pending and shows under Pending completion. The rate used is recorded on every row. Doctor Shares are never affected. Whether "case start" means the case's own start time is part of this answer.
-- **WHEN IT MUST BE ANSWERED:** Before the first change to the general lab percentage is made in production (and before Reporting is completed).
-
-### Q-FIN-2
-- **AREA:** Sales payroll / commission
-- **QUESTION:** What is the mathematical base the Sales commission percentage applies to (collected money, treatment value, clinic share, or other)? May a Sales payroll be finalized before this is configured?
-- **WHY IT MATTERS:** Without a base no commission amount can be computed; the Estimated Operating Result also lacks Sales compensation.
-- **WHAT IT BLOCKS:** Commission amounts, Sales payroll finalization, completeness of the Estimated Operating Result.
-- **CURRENT SYSTEM BEHAVIOR:** Commission percentage per employee and Original Sales Employee attribution are stored. `ISalesCommissionBase` has no implementation; the system never guesses a commission. Base salary, bonus and deductions work. The Sales payroll **finalize action is disabled behind a configuration flag**. Reports show a "Sales commission not configured" notice.
-- **WHEN IT MUST BE ANSWERED:** Before the Payroll module's Sales payroll is completed.
-
-### Q-FIN-3
-- **AREA:** Finance / discounts
-- **QUESTION:** Which role initially enters or approves the agreed discount (fixed EGP amount)?
-- **WHY IT MATTERS:** The Doctor does not independently apply discounts; someone must be able to, or no discount can exist.
-- **WHAT IT BLOCKS:** Any non-zero discount.
-- **CURRENT SYSTEM BEHAVIOR:** `Finance.Discount.Set` exists as an internal key assigned to **no role**; **no route is mapped**. Every charge has `discount_amount = 0` and `discount_set_by_user_id = NULL`. Assigning the role later needs no schema change.
-- **WHEN IT MUST BE ANSWERED:** Before go-live if the clinic gives discounts (before the discount-capable charge flow is built).
-
-### Q-ORT-4
-- **AREA:** Orthodontics / finance
-- **QUESTION:** Which role enters the orthodontic total price, deposit and number of months?
-- **WHY IT MATTERS:** These terms create the ortho charge, the schedule and the installments.
-- **WHAT IT BLOCKS:** Creating the ortho charge, generating the installment schedule, ortho reminders.
-- **CURRENT SYSTEM BEHAVIOR:** `Orthodontics.Terms.Set` exists internally, assigned to **no role**; **no route is mapped**. The ortho case (area and appliance) can be created without terms; `charge_id`, `deposit_amount` and `number_of_months` are nullable until terms exist. The case has its one work item; no charge exists.
-- **WHEN IT MUST BE ANSWERED:** Before the Orthodontics module's schedule generation is implemented.
-
-### Q-FIN-6 (redefined)
-- **AREA:** Finance / fixed lab
-- **QUESTION:** How does a Fixed Lab revision (e.g. 200 → 300) affect Lab/Clinic completions that were already recorded: leave earlier completions unchanged and apply the new amount going forward, create corrections for earlier completions, or another rule?
-- **WHY IT MATTERS:** It decides whether historical Lab/Clinic splits change after a Manager edit.
-- **WHAT IT BLOCKS:** Nothing today; it matters only once Q-FIN-1 produces fixed-lab completions.
-- **CURRENT SYSTEM BEHAVIOR:** **Resolved part:** a revision can **never** change a recognized Doctor Share. Revisions and completions are insert-only, so any rule can be applied later without rewriting rows. No fixed-lab completions exist yet.
-- **WHEN IT MUST BE ANSWERED:** Together with Q-FIN-1.
-
-### Q-FIN-9
-- **AREA:** Finance / attribution
-- **QUESTION:** Who earns collections on a charge after the patient is reassigned to another Doctor, or the performing Doctor becomes inactive? Which payroll period does a later-recognized earning belong to? May a hold be released if the patient is reassigned back?
-- **WHY IT MATTERS:** Financial ownership generally follows the Doctor's performed work (confirmed), but long-running cases (ortho, implants) keep collecting after a change.
-- **WHAT IT BLOCKS:** Doctor Share, payroll and revenue recognition for **held allocations only**.
-- **CURRENT SYSTEM BEHAVIOR:** When a reassignment or deactivation happens while the charge has Outstanding > 0, an attribution hold is recorded. Payments, allocations and Outstanding are never blocked. Held allocations get a pending-attribution row, **no Doctor Share (not even provisional), no earning, no payroll entry, no Clinic revenue**. The Doctor's view shows a neutral "Share pending" marker; the Manager report shows Pending Doctor Attribution. Holds are never removed automatically.
-- **WHEN IT MUST BE ANSWERED:** Before Payroll is completed and before the first patient reassignment with an open balance occurs in production.
-
-### Q-PAY-1
-- **AREA:** Finance / refunds and corrections
-- **QUESTION:** Are refunds supported? Who authorizes them and how do they affect Doctor, Lab and Clinic shares already distributed (including Doctor payroll)? What is the procedure for an incorrectly recorded payment?
-- **WHY IT MATTERS:** A reversal flows into the next Doctor payroll as a negative amount, which silently decides that a Doctor's share is clawed back; that is a business rule.
-- **WHAT IT BLOCKS:** Any refund, payment reversal or charge adjustment endpoint.
-- **CURRENT SYSTEM BEHAVIOR:** Primitives only (negative payment with `reverses_payment_id`, negated earning/completion, `charge_adjustments`), as a tested internal service. `Finance.Adjustments.Create` is assigned to the Manager but **no endpoint is mapped**.
-- **WHEN IT MUST BE ANSWERED:** Before any correction capability is built; at the latest before go-live if the clinic expects to correct mistakes in-app.
-
-### Q-PAY-2
-- **AREA:** Payroll
-- **QUESTION:** What is the payroll period (monthly, semi-monthly, other) for Doctor, Sales **and Assistant** payroll (v1.1), and what are the payroll status values and transitions?
-- **WHY IT MATTERS:** Payroll aggregates recognized earnings per period; the user confirmed status / finalized-at / paid-date fields but not the period or the status list.
-- **WHAT IT BLOCKS:** Period-driven draft creation defaults and the status workflow beyond the placeholders.
-- **CURRENT SYSTEM BEHAVIOR:** The period is a parameter (any start/end date; Assistant payroll stores `period_start` / `period_end`, with overlapping periods prevented per Assistant). Status placeholders Draft, Finalized, Paid are used (technical).
-- **WHEN IT MUST BE ANSWERED:** Before the Payroll module's workflow screens are completed.
-
-### Q-PAY-3
-- **AREA:** Finance / payments
-- **QUESTION:** How are overpayments, unallocated amounts and patient credit handled?
-- **WHY IT MATTERS:** The schema permits unallocated credit, but no policy exists.
-- **WHAT IT BLOCKS:** Relaxing the two V1 validation defaults.
-- **CURRENT SYSTEM BEHAVIOR:** `RecordPayment` requires Σ allocations to equal the payment amount, and refuses an allocation that would push a charge's Collected above its Billed (veto-able technical defaults).
-- **WHEN IT MUST BE ANSWERED:** Before go-live if the clinic ever accepts advance payments.
-
-### Q-PAY-ASST-1 *(v1.1)*
-- **AREA:** Assistant Payroll / Reporting
-- **QUESTION:** How should monthly Assistant salary expense be recognized / allocated across Daily, Weekly and Custom reporting periods? (Options raised and NOT decided: calendar-day proration, working-day proration, recognition only when payroll is finalized, recognition on the payment date, another clinic rule.)
-- **WHY IT MATTERS:** The Manager financial reports need a period-specific operating result, but a monthly salary cannot be divided arbitrarily without a confirmed business rule. This is a *reporting-recognition* question only.
-- **WHAT IT BLOCKS:** Accurate Assistant salary expense in non-monthly / custom reports; finalizing the Daily / Weekly / Custom Operating Result.
-- **CURRENT SYSTEM BEHAVIOR:** Assistant payroll stores the salary for its payroll period. No daily / weekly proration is performed and salary is never divided by 30. If the report range fully contains a payroll period, that payroll is included normally. If the range only partially overlaps a payroll period, the Assistant Payroll Expense line shows **PENDING / NOT ALLOCATED FOR THIS REPORT RANGE** and the result is labelled **INCOMPLETE — ASSISTANT SALARY ALLOCATION PENDING**. *(TECHNICAL DEFAULT, veto-able: while this is open only Finalized and Paid payrolls count; Draft payrolls are listed as not yet finalized.)*
-- **WHEN IT MUST BE ANSWERED:** Before Daily / Weekly / Custom Operating Result reporting is finalized.
-
-### Q-PAY-ASST-2 *(v1.1)*
-- **AREA:** Assistant Payroll / Salary Calculation
-- **QUESTION:** How should Assistant salary be calculated when the employee works only part of a payroll period, joins or leaves during the period, or their salary changes during the period? (Examples: 1–14 March at a 6,000 monthly rate and 15 March onward at 7,000; or an Assistant who joins on 20 March.)
-- **WHY IT MATTERS:** `final_amount` currently equals `salary_snapshot`, which only works cleanly when one salary applies to the full payroll period. This is a *payroll-amount calculation* question, separate from Q-PAY-ASST-1.
-- **WHAT IT BLOCKS:** Partial-period Assistant payroll and payroll covering a mid-period salary change.
-- **CURRENT SYSTEM BEHAVIOR:** The system does NOT prorate salary and does not allow an arbitrary `final_amount`. A payroll that requires a partial-period calculation cannot be finalized until the rule is confirmed. The model holds `current_salary` plus payroll snapshots plus audited salary changes; no effective-dated salary-history table exists yet and may be added if this answer requires it.
-- **WHEN IT MUST BE ANSWERED:** Before the clinic needs a partial-period Assistant payroll or a salary change effective inside an active payroll period.
-
-*Not a numbered question:* bonuses, deductions, overtime, attendance deductions, commissions and incentives for Assistants are **not confirmed and not designed**. If any exists it needs the owner's explicit approval before any schema is added.
-
-### Q-FIN-DC
-- **AREA:** Finance / reporting
-- **QUESTION:** What is "Daily Closing" (it appears in the original Finance module list with no definition)? Is it needed?
-- **WHY IT MATTERS:** A closing workflow would add a sealed daily state.
-- **WHAT IT BLOCKS:** Any daily-closing feature.
-- **CURRENT SYSTEM BEHAVIOR:** Nothing is designed. The Manager's daily dashboard computes daily totals live.
-- **WHEN IT MUST BE ANSWERED:** Before Reporting is completed, if wanted.
-
-## Orthodontics
-
-### Q-ORT-1
-- **AREA:** Orthodontics
-- **QUESTION:** Initial generated installments are equal (the final installment absorbing any rounding difference). May individual installment amounts later be customized, and by whom?
-- **WHY IT MATTERS:** Decides what the schedule UI offers.
-- **WHAT IT BLOCKS:** Custom-schedule UI and edit rules.
-- **CURRENT SYSTEM BEHAVIOR:** Installments are individual rows, so custom amounts are supported by the data model. Generation produces equal initial installments (the final installment absorbs the rounding difference) from a given first due date. Customization is **not confirmed** and no edit route exists.
-- **WHEN IT MUST BE ANSWERED:** Before the Orthodontics schedule screens are completed.
-
-### Q-ORT-2
-- **AREA:** Orthodontics / finance
-- **QUESTION:** How are payments applied to installments when a patient pays early, pays several future installments at once, or pays more or less than the amount due?
-- **WHY IT MATTERS:** The confirmed installment fields (amount paid, payment date, method, received by, remaining) and statuses (Partially Paid, Paid, Overdue) depend on it.
-- **WHAT IT BLOCKS:** Per-installment amount paid/remaining/status; any installment-application behavior.
-- **CURRENT SYSTEM BEHAVIOR:** **Not resolved through the API.** Payments are allocated to the ortho **charge** only; no route, job or handler creates an `installment_payments` row (table and allocation-cap trigger exist, unused). Installment reads show due date and amount due, charge-level Collected and Outstanding, an "unapplied ortho collections" figure, and `applicationState: "Pending"`. Doctor Share is unaffected (computed at allocation time). J2 reminds while the ortho charge has Outstanding > 0.
-- **WHEN IT MUST BE ANSWERED:** Before the Orthodontics installment display and reminders are completed.
-
-### Q-ORT-3
-- **AREA:** Orthodontics
-- **QUESTION:** If the orthodontic total price changes mid-treatment (Manager correction), how does the remaining schedule change?
-- **WHY IT MATTERS:** Charges are immutable; a price change needs an adjustment and a schedule rule.
-- **WHAT IT BLOCKS:** Ortho price corrections.
-- **CURRENT SYSTEM BEHAVIOR:** No route; schedule changes would be controlled, audited actions on `ortho_installments`; none is exposed.
-- **WHEN IT MUST BE ANSWERED:** Before any ortho price-correction capability is built.
-
-## Clinical
-
-### Q-CLN-1
-- **AREA:** Clinical / prescriptions
-- **QUESTION:** After a visit is finalized, who may correct a prescription (and other parts of the finalized visit), and how? Is the visit or case reopened, or is there another mechanism?
-- **WHY IT MATTERS:** Only "changes after finalization are auditable" is confirmed.
-- **WHAT IT BLOCKS:** Any post-finalization correction endpoint or workflow.
-- **CURRENT SYSTEM BEHAVIOR:** Before finalization the Doctor edits freely (own visit). After finalization the G1 trigger blocks changes for **everyone, including the Manager**, unless the transaction carries the audited-correction flag, which only the (not yet built) correction code path may set. No correction endpoint is mapped.
-- **WHEN IT MUST BE ANSWERED:** Before the Clinical/Prescriptions modules are completed, if the clinic expects any post-finalization correction in-app.
-
-### Q-CLN-2
-- **AREA:** Clinical / work items
-- **QUESTION:** When a Doctor continues another Doctor's case **without** separately priced work, should that work share any revenue?
-- **WHY IT MATTERS:** Financial ownership generally follows the Doctor who performed the work (confirmed), but no rule describes shared or unpriced continuation.
-- **WHAT IT BLOCKS:** Nothing; no work item is created for such work.
-- **CURRENT SYSTEM BEHAVIOR:** Continuing a case adds a treatment record only; a new work item (with its own snapshot) exists only when `separatelyPricedWork = true`, and is refused on orthodontic cases. The continuing Doctor gets no financial ownership.
-- **WHEN IT MUST BE ANSWERED:** Before Clinical is completed, if the clinic has such a scenario.
-
-## Scheduling
-
-### Q-APP-2
-- **AREA:** Scheduling
-- **QUESTION:** May the Manager intentionally book into a fully booked Doctor schedule, or is double-booking never allowed?
-- **WHY IT MATTERS:** Decides whether an override path exists.
-- **WHAT IT BLOCKS:** A Manager schedule-override feature.
-- **CURRENT SYSTEM BEHAVIOR:** No override exists; the unique index refuses any same-slot booking for everyone.
-- **WHEN IT MUST BE ANSWERED:** Before the Scheduling module is completed.
-
-### Q-APP-3
-- **AREA:** Scheduling / permissions
-- **QUESTION:** May Sales also Cancel, Confirm or mark No Show on appointments, or is that Manager-only?
-- **WHY IT MATTERS:** The confirmed status list has no stated actor for these changes.
-- **WHAT IT BLOCKS:** Sales access to those status changes.
-- **CURRENT SYSTEM BEHAVIOR:** `Scheduling.Appointments.UpdateStatus` is seeded to the Manager only; **Manager-only is the current seed, not a clinic rule**. Sales can reschedule but cannot cancel, confirm or mark no-show. Changing it is a one-line seed change.
-- **WHEN IT MUST BE ANSWERED:** Before Scheduling UAT.
-
-## CRM, patients and staff
-
-### Q-APP-4 *(v1.1 scheduling correction)*
-- **AREA:** Scheduling / Patient Arrival Workflow
-- **QUESTION:** After removing the Arrived and Waiting appointment states, should the system track when a patient physically reaches the clinic? If yes: should Sales record it? Should it be an event or timestamp rather than a status? Should there be any Doctor queue? How should the Doctor know the patient is ready?
-- **WHY IT MATTERS:** The previous workflow used Arrived and Waiting to represent the handoff between Reception and Doctor. Those states are now explicitly removed.
-- **WHAT IT BLOCKS:** Any future patient-arrival / clinic-queue workflow.
-- **CURRENT SYSTEM BEHAVIOR:** There is no Arrived state, no Waiting state, no Sales check-in action, no arrival columns, no waiting queue and no Doctor queue route. An appointment remains Scheduled or Confirmed until the Doctor starts the linked visit, at which point it becomes In Treatment.
-- **WHEN IT MUST BE ANSWERED:** Before implementing any patient-arrival or Doctor waiting-queue feature. Arrived and Waiting are not reintroduced when this is answered unless the owner explicitly changes this requirement.
-
-### Q-PAT-1
-- **AREA:** Patients / CRM attribution
-- **QUESTION:** Who is the Original Sales Employee of a walk-in patient registered directly, and who may assign or change it later?
-- **WHY IT MATTERS:** Commission entitlement is associated with the patients an employee brought (confirmed), but direct registration is not a lead.
-- **WHAT IT BLOCKS:** Attribution of walk-ins; any assign/change route.
-- **CURRENT SYSTEM BEHAVIOR:** Direct registration leaves `original_sales_employee_id` **NULL** (Sales cannot supply it; Manager registration may supply an optional value). Lead conversion preserves the lead's value (confirmed). No change route exists. Reports show a count of patients without an Original Sales Employee.
-- **WHEN IT MUST BE ANSWERED:** Before Q-FIN-2 is implemented / before Sales payroll is completed.
-
-### Q-EMP-1
-- **AREA:** Employees
-- **QUESTION:** When a Sales employee becomes inactive, who handles their open leads and follow-ups, and does their commission entitlement on patients they brought continue?
-- **WHY IT MATTERS:** Departures are confirmed (login disabled, history preserved) but ownership of open work is not.
-- **WHAT IT BLOCKS:** Reassignment of leads/follow-ups; delivery of reminders for inactive owners.
-- **CURRENT SYSTEM BEHAVIOR:** Nothing is moved. Follow-ups of an inactive owner are visible as "owner inactive" to the Manager and counted by J7 (digest only). No notification is sent to an inactive owner.
-- **WHEN IT MUST BE ANSWERED:** Before Crm is completed.
-
-## Other modules
-
-### Q-EXP-1
-- **AREA:** Expenses
-- **QUESTION:** Do clinic operating expenses require a receipt or document attachment?
-- **WHY IT MATTERS:** It would introduce file storage and file backup.
-- **WHAT IT BLOCKS:** Any upload capability.
-- **CURRENT SYSTEM BEHAVIOR:** No file storage exists in V1.
-- **WHEN IT MUST BE ANSWERED:** Before the Expenses module is completed.
-
-### Q-EXP-2
-- **AREA:** Expenses
-- **QUESTION:** What triggers finalization of an expense entry (after which only adjustment rows are allowed)?
-- **WHY IT MATTERS:** The user confirmed "finalized entries use adjustment/reversal" but not what finalizes one.
-- **WHAT IT BLOCKS:** Setting `finalized_at`.
-- **CURRENT SYSTEM BEHAVIOR:** `finalized_at` is never set; expenses stay audited-editable; adjustment rows are available.
-- **WHEN IT MUST BE ANSWERED:** Before the Expenses module is completed.
-
-### Q-FDB-1
-- **AREA:** Feedback
-- **QUESTION:** After how long does a feedback request become Expired?
-- **WHY IT MATTERS:** Without it the confirmed status never occurs.
-- **WHAT IT BLOCKS:** Job J6.
-- **CURRENT SYSTEM BEHAVIOR:** `expires_at` stays NULL; J6 is inert; nothing expires.
-- **WHEN IT MUST BE ANSWERED:** Before the Feedback module is completed.
-
-### Q-FDB-2
-- **AREA:** Feedback
-- **QUESTION:** How does the system learn that the patient submitted on the clinic website: a token-based public endpoint, or manual marking by Sales?
-- **WHY IT MATTERS:** Decides whether the sixth anonymous endpoint exists.
-- **WHAT IT BLOCKS:** The public submission route.
-- **CURRENT SYSTEM BEHAVIOR:** V1 flow is manual (Sales issues a link and marks it sent). The columns support both options; `POST /api/public/feedback/{token}` exists only if the token option is chosen.
-- **WHEN IT MUST BE ANSWERED:** Before the Feedback module is completed.
-
-### Q-DOC-1
-- **AREA:** Documents
-- **QUESTION:** Are printed receipts or printed invoices needed, and must they be tax-compliant?
-- **WHY IT MATTERS:** Adds a print model, numbering and possibly legal requirements.
-- **WHAT IT BLOCKS:** Any receipt/invoice print endpoint.
-- **CURRENT SYSTEM BEHAVIOR:** Payments return data only (`PaymentConfirmationDto`); nothing printable is defined.
-- **WHEN IT MUST BE ANSWERED:** Before go-live if receipts are expected.
-
-### Q-DOC-2
-- **AREA:** Documents
-- **QUESTION:** Are digital patient consent forms required?
-- **WHY IT MATTERS:** Would add documents, signatures and retention requirements.
-- **WHAT IT BLOCKS:** Any consent-form feature.
-- **CURRENT SYSTEM BEHAVIOR:** None exists.
-- **WHEN IT MUST BE ANSWERED:** Before go-live if required.
-
----
-
-# GROUP 3: NON-BLOCKING BEFORE V1 GO-LIVE
-
-### Q-PRV-1
-- **AREA:** Privacy / Patients
-- **QUESTION:** Should Sales see the Doctor's referral reason, and should DOB visibility to Sales be changed from its current setting?
-- **WHY IT MATTERS:** Visibility was deliberately not locked by the client; it is a privacy setting.
-- **WHAT IT BLOCKS:** Nothing; it is a configuration value.
-- **CURRENT SYSTEM BEHAVIOR:** Referral reason is hidden from Sales (configuration setting, unset = hidden). No code change is needed to change it.
-- **WHEN IT MUST BE ANSWERED:** Before V1 go-live.
-
-### OPS-1
+### OPS-1 — DEFERRED (does not block implementation)
 - **AREA:** Operations / backup security
-- **QUESTION:** Who holds the two backup recovery private keys, and where are the copies stored?
-- **WHY IT MATTERS:** A backup contains password hashes, the audit log and every clinical and financial record. Losing both keys makes every off-site backup unreadable. Either key alone decrypts (redundancy, **not** two-person approval).
-- **WHAT IT BLOCKS:** Configuring the two public keys in production; go-live.
-- **CURRENT SYSTEM BEHAVIOR:** Encryption to two independent recipients is designed; no private key is on the VM; custody is **not** tied to any application role (the Manager role does not automatically hold a key). Public keys are deployment configuration.
-- **WHEN IT MUST BE ANSWERED:** Before go-live (before the first production backup).
-
-### OPS-2
-- **AREA:** Legal / data residency / retention
-- **QUESTION:** Where may Egyptian patient data be hosted and backed up (region, cross-border rules)? How long must medical and financial records be retained, and must any controlled-erasure workflow also reach backups? Is hosted error tracking acceptable?
-- **WHY IT MATTERS:** Determines the production region, the off-site backup provider, retention numbers and the error-tracking choice.
-- **WHAT IT BLOCKS:** Choosing the production region and providers.
-- **CURRENT SYSTEM BEHAVIOR:** Nothing assumed. The architecture runs in any region that meets the provider criteria. Backup retention numbers are defaults. No erasure workflow is designed.
-- **WHEN IT MUST BE ANSWERED:** Before the production region and providers are chosen, and before go-live.
-
-### OPS-3
-- **AREA:** Operations / hosting
-- **QUESTION:** Which cloud provider, region, domain and managed PostgreSQL product (meeting the Step 12 criteria, including PITR granularity)?
-- **WHY IT MATTERS:** Needed to provision staging and production; PITR granularity decides whether the 5-minute RPO claim can be made.
-- **WHAT IT BLOCKS:** Provisioning staging/production.
-- **CURRENT SYSTEM BEHAVIOR:** Vendor-independent design; Development runs on Docker Compose.
-- **WHEN IT MUST BE ANSWERED:** Before staging is provisioned.
-
-### OPS-4
-- **AREA:** Operations / recovery targets
-- **QUESTION:** Does the Manager accept the proposed RPO/RTO (A: none/4 h, B: 5 min/4 h, C: 24 h/1 day), the retention defaults, and the manual paper fallback process during downtime?
-- **WHY IT MATTERS:** These are risk figures the clinic should consciously accept.
-- **WHAT IT BLOCKS:** Nothing in code.
-- **CURRENT SYSTEM BEHAVIOR:** The defaults are designed and tested as written.
-- **WHEN IT MUST BE ANSWERED:** Before go-live.
-
-### OPS-5
-- **AREA:** Operations / on-call
-- **QUESTION:** Who is the named operator and the backup contact for critical alerts, and which monitoring vendors are used?
-- **WHY IT MATTERS:** One freelancer is a single point of failure for alerts.
-- **WHAT IT BLOCKS:** Alert routing configuration.
-- **CURRENT SYSTEM BEHAVIOR:** Routing is designed (critical: SMS/push + email, escalation after 30 minutes); vendors are examples, not decisions.
-- **WHEN IT MUST BE ANSWERED:** Before go-live.
-
-### Q-BRN-1
-- **AREA:** Scope
-- **QUESTION:** Is multi-branch needed in Version 1?
-- **WHY IT MATTERS:** Decides whether a branch dimension is added to the schema.
-- **WHAT IT BLOCKS:** Nothing now; adding a branch column later is a migration.
-- **CURRENT SYSTEM BEHAVIOR:** Out of scope; single clinic; no branch field.
-- **WHEN IT MUST BE ANSWERED:** Before go-live planning, ideally before the schema is first deployed to production.
+- **DECIDED (CONFIRMED):** The **Clinic Manager, as a person, holds both backup recovery private keys.**
+- **DEFERRED:** The exact physical / storage locations of the two private keys are decided at deployment / go-live. **No storage location is invented in this package.**
+- **RULES THAT STAND:** A recovery private key is **never stored on the production VM**; either key alone decrypts (redundancy, not two-person approval); losing both makes every off-site backup unreadable. Holding a key is a custody duty of that person and grants or requires no application permission.
+- **WHAT IT BLOCKS:** Only configuring the two public keys in production and the first production backup. No application code waits for it.
+- **WHEN:** Before go-live (before the first production backup).
 
 ---
+
+# 2. ANSWERED DECISIONS — OWNER DECISION
+
+Each row is **ANSWERED — OWNER DECISION**. "Applied in" lists the documents carrying the rule. Old defaults and technical placeholders for these questions were removed from the active design; they survive only in DESIGN_FREEZE.md's change history.
+
+## 2.1 Frontend, scheduling, CRM
+
+| ID | ANSWERED — OWNER DECISION | Applied in |
+|---|---|---|
+| **Q-UI-1** | UI is **Arabic only**; RTL from the first screen; Arabic labels, user-visible validation messages, reports and application-generated printable documents (prescription print layout where application text is involved). API codes stay language-neutral. **No bilingual switching in V1.** | BASELINE §5, API §2, DEPLOYMENT, GUARDRAILS |
+| **Q-APP-1** | Appointment duration is entered **manually per appointment** by Sales / Reception. No clinic-wide duration, no procedure-duration mapping. **Overlapping appointments for the same Doctor are allowed.** When the Doctor ends the linked Visit earlier than the booked duration, the unused future part of the booked time becomes **available again** (availability release from the actual Visit end; the Appointment and its history are never deleted or altered). | DATABASE §8, API A8, FINANCE n/a, DIAGRAMS 08 |
+| **Q-APP-2** | The Manager may create overlapping appointments; **no separate override workflow**; the old conflict rejection is removed. | DATABASE §8, API A8, SECURITY §4 |
+| **Q-APP-3** | **Sales / Reception and Manager** may **Confirm, Cancel and mark No Show**. Sales / Reception also retains **Reschedule**. | SECURITY §4, API A8 |
+| **Q-APP-4** | New confirmed workflow: **Sales / Reception records patient arrival** as an event / timestamp **separate from Appointment status**. The seven statuses stay exactly Scheduled, Confirmed, In Treatment, Completed, Cancelled, No Show, Rescheduled (**no Arrived, no Waiting**). The Doctor reads a **queue derived from arrival** (arrived, not yet started, non-terminal appointment). When the Doctor starts the linked Visit the Appointment becomes In Treatment and the patient leaves the queue. | DATABASE §8, API A8/A9, SECURITY, DIAGRAMS 08/06 |
+| **Q-CRM-1** | Follow-up statuses are exactly **جديد (New), تم التواصل (Contacted), لم يرد (NoResponse), تمت المتابعة (FollowedUp)**. **Open = New, Contacted, NoResponse. Closed = FollowedUp.** This predicate drives Pending Follow-Ups, follow-up notifications / jobs, dashboard counts, inactive-owner handling and validation. No other status exists. | DATABASE §12, API B3/B6, BASELINE |
+| **Q-EMP-1** | Manager UI: **All Leads** table with Responsible Sales Member. Each Sales employee: **My Leads**. When a Sales employee becomes Inactive, their **open Leads and open Follow-Ups are redistributed evenly among Active Sales employees**; original Sales attribution and responsibility history are preserved. **If no Active Sales employee exists, the deactivation still succeeds and the open Leads / Follow-Ups become unassigned / pending** (responsible = NULL), visible to the Manager, who assigns them. An inactive Sales employee receives **no new commission** after the deactivation date (different from Doctors). | DATABASE §12, API, SECURITY, FINANCE §10 |
+| **Q-PAT-1** | A direct patient is explicitly classified **Walk-In / Direct** (`patient_source`) and has **no Original Sales Employee**. **Money collected from a Walk-In / Direct patient generates ZERO Sales commission, and there is no shared pool** (this final decision replaces the earlier monthly pool rule). Lead-sourced patients keep individual attribution; the Sales employee who merely registers a Walk-In patient earns nothing. | DATABASE §7/§13/§15, FINANCE §10, API |
+
+## 2.2 Finance, payments, payroll
+
+| ID | ANSWERED — OWNER DECISION | Applied in |
+|---|---|---|
+| **Q-FIN-W1** | Doctor enters the price and the Consultation Fee (the **Manager has no initial-price authority**; the discount may be entered by Doctor, Sales or Manager) during the Visit; **Charge(s) are established when the Doctor Finalizes the Visit** (treatment and consultation). No Sales / Manager approval before establishment. Consultation stays separate and earns no Doctor commission. | FINANCE §3, DATABASE §9/§13, API |
+| **Q-FIN-3** | **Doctor, Sales / Reception and Manager** may set a Discount before the Visit is finalized (Sales without any clinical-note access, through a narrow pricing view). **Total = Price − Discount**; Discount is a **fixed EGP amount**, never a percentage. Each write records actor, role and time; the Charge records Original Price, Discount, Final Price and the setter. After the Charge exists only the Manager corrects it, through the audited correction model. Commission and Doctor share follow the money actually collected. | FINANCE §3, SECURITY §4, API, ADR-017 |
+| **Q-FIN-W2** | General Lab percentage = the rate **active at payment (allocation) time**. A later change never changes earlier payments and never changes a Doctor's entitlement. | FINANCE §6 |
+| **Q-FIN-1** | **Fixed-lab Lab-First collection order** (Implant, Fixed Prosthetics, Removable Prosthetics; **the Doctor sets the price and enters the initial fixed lab amount — before the first Fixed-lab priced work is financially finalized, and an unknown Fixed Lab is never treated as zero — and the Manager may only revise it afterwards**): Fixed Lab is covered first; then Doctor entitlement is recognized; an unpaid entitlement stays **pending** and carries forward; Clinic Share receives only the remainder and **never becomes negative**. The Doctor's entitlement is preserved even while recognition is deferred. Replaces the old "Doctor earning immediately on every fixed-lab allocation". General lab is separate. | FINANCE §7, DATABASE §13 |
+| **Q-FIN-6** | A Fixed Lab revision after distributions exist **preserves all rows** and adds correction / reconciliation rows so historical Lab / Clinic distributions reflect the revised amount. Never changes the Doctor percentage / ownership rule. | FINANCE §7.4 |
+| **Q-FIN-9** | **Financial ownership stays with the Doctor who performed the work**, regardless of patient reassignment or that Doctor becoming inactive. Later-collected earning belongs to the **payroll month in which the collection actually occurs**. **Attribution holds, `PendingDoctorAttribution`, `PatientReassigned` / `DoctorDeactivated` finance handlers are removed.** | FINANCE §8, DATABASE §13 |
+| **Q-FIN-2** | **Sales commission base = collected money** after discount (not billed value, not uncollected treatment value, not Clinic Share; Walk-In / Direct collections are excluded, see Q-PAT-1). The **Manager sets each Sales employee's commission percentage when creating the employee / account; it is required** and may change it later (Q-COMM-1). | FINANCE §10, DATABASE §6, API |
+| **Q-COMM-1** | **ANSWERED (was a pending question):** the Manager may **change a Sales employee's commission rate later**. A new rate applies to **FUTURE collections only**; the rate in force **at collection time** applies to each collection; old collections, Draft items and finalized payroll are **never recalculated**. Manager only, audited. Walk-In / Direct stays zero with no pool. Implemented as effective-dated `sales_commission_rate_history` plus a per-item rate snapshot. Example: 5 % on 1,000 = 50; after the change to 7 %, 1,000 = 70; total 120; Walk-In 0. | DATABASE §6/§15, FINANCE §10, SECURITY §4, API (`PUT /sales-employees/{id}/commission`: future collections only), ADR-018 |
+| **Q-PAY-1** | **Manager only** performs Refund, Payment Correction and Payment Reversal, always through new correction / reversal ledger entries (never destructive edits), propagating to Doctor entitlement, Lab, Clinic Share and Payroll; all audited. | FINANCE §9 |
+| **Q-PAY-2** | Payroll is **monthly** for Doctor, Sales and Assistant, on **calendar-month** periods; statuses **Draft → Finalized → Paid**; finalized payroll stays protected. | FINANCE §11, DATABASE §15 |
+| **Q-PAY-3** | **Patient Credit** is supported: overpayment remainder and money paid before a Charge exists become Patient Credit, belong to the patient, persist and can be applied to future Charges. The old rule "Σ allocations = whole payment" is removed (payment = allocated + credit). | FINANCE §5, DATABASE §13 |
+| **Q-PAY-ASST-1** | Assistant salary is a **monthly** expense / reporting item. **No proration** into Daily / Weekly / partial Custom reports (no ÷30, no calendar-day or working-day division). Monthly reports include the monthly Assistant payroll expense. The old PENDING / INCOMPLETE behavior is removed. | FINANCE §12 |
+| **Q-PAY-ASST-2** | **No automatic proration.** For a mid-month join / leave / salary change / other partial case, the **Manager manually enters the Base Pay**, audited. A full normal month defaults to the salary snapshot. The salary snapshot is preserved. **Final = Base Pay + Overtime.** | FINANCE §11.3, DATABASE §15 |
+| **Q-ATT-1** | **Attendance** is kept for **Assistants and Sales / Reception employees**, entered and edited **only by the Manager** (no self-check-in, no Assistant account). One record per person per day. **Attendance alone deducts no pay.** | DATABASE §5, SECURITY §4, API A8 |
+| **Q-OT-1** | **Assistant overtime**: the Manager configures an hourly overtime rate per Assistant and records approved overtime hours; **amount = approved hours × the rate snapshot taken when the entry is created**; a later rate change never recalculates earlier entries. Overtime is included in the Assistant's monthly payroll as its own line. Sales has no overtime. Overtime is never created automatically from attendance. | DATABASE §5/§15, FINANCE §11, API |
+| **Q-FIN-DC** | **No Daily Closing** feature (no Close Day, no sealed daily state). The Manager Daily Report stays live. | FINANCE §12 |
+
+## 2.3 Orthodontics, clinical
+
+| ID | ANSWERED — OWNER DECISION | Applied in |
+|---|---|---|
+| **Q-ORT-4** | The Doctor initially enters the **Gross Total Price, Deposit, Number of Months** during the editable Visit (stored only). The initial schedule is generated **at Visit finalization**, from `Effective Ortho Total − Deposit`, where **Effective Ortho Total = Gross − Discount = Ortho Charge Billed**. The Manager may edit / correct the terms later, audited. Sales does not set terms. | DATABASE §11, FINANCE §13, API |
+| **Q-ORT-1** | Initial installments are equal (the last one absorbs rounding) and are generated once, at Visit finalization. Afterwards **only the Manager** edits the schedule (installment amounts, due dates of unpaid installments, manual additions, safe retirement; audited). Doctor and Sales cannot. | DATABASE §11, API |
+| **Q-ORT-2** | Payments are recorded against the Ortho Charge; **Sales / Reception or Manager manually selects** the installment(s) a payment is applied to (one→one, one→many, partial, early, future). **No automatic oldest-first.** Installment paid / remaining / status are derived from these application rows. `installment_payments` is activated. | DATABASE §11, FINANCE §13 |
+| **Q-ORT-3** | If the Ortho Gross Total is **increased** (the Discount snapshot is not re-applied; Billed rises by the same amount), existing installments are **not** redistributed; a **new installment for the difference** is added (20,000 → 24,000 adds 4,000). A *decrease* is **not supported in V1** (rejected with `ortho.total_decrease_not_supported`): see Q-ORT-3b (DEFERRED / OPEN FOR FUTURE VERSION). Generic `PriceCorrection` / `DiscountCorrection` can never change an Ortho Total (`ortho.use_terms_edit`); all Ortho Total changes go through `Orthodontics.Terms.Edit`. | FINANCE §13, DATABASE §11 |
+| **Q-ORT-5** | **Deposit or Number of Months edited after installments exist (OWNER DECISION):** the system does **not** automatically regenerate, add, remove or redistribute installments. The Manager **manually adjusts the schedule** through one atomic, audited batch: revise the amount of an eligible installment, revise the due date of an unpaid installment, **add** a future `ManagerAdded` installment, **retire** an unpaid installment (a revision, never a delete). Example (no discount): Effective 20,000, Deposit 5,000 → 7,000: the installments must now sum to 13,000; with a 2,000 Discount the Effective Total is 18,000 and the required sum is 11,000. Months 10 → 12 / 10 → 8 changes the month plan: nothing is created or removed until the Manager does it. Until **Deposit + Σ active installments = Effective Ortho Total** *and* the active regular installments equal the Number of Months, the case is flagged (derived `requires_schedule_adjustment`, not a new status) and the schedule is not treated as valid. A Months value lower than the regular installments that already have payments is rejected (`ortho.months_conflict_with_paid_history`). Paid history is immutable: no installment goes below what was applied to it, none with payment history is deleted, retired or re-dated, and no payment moves between installments. Sales and the Doctor cannot edit the schedule. | DATABASE §11, FINANCE §13, SECURITY §4, API A8, GUARDRAILS §13c–§13d |
+| **Q-CLN-1** | The Doctor may correct their **own** finalized Visit / Prescription; **no Manager approval**. The Visit is **not reopened**. A controlled, audited correction path records Doctor, timestamp, record, changed fields and the correction relationship; historical evidence is never silently overwritten. G1 updated. | DATABASE §9/§18, SECURITY, API |
+| **Q-CLN-2** | **Every Doctor enters the price of the work they performed** after their Visit; each Doctor earns only from their own priced work; no automatic revenue sharing. The manual `separatelyPricedWork` flag is **removed**. Orthodontics keeps its single-charge model. | FINANCE §4, DATABASE §9 |
+
+## 2.4 Accounts, expenses, feedback, documents, privacy, scope
+
+| ID | ANSWERED — OWNER DECISION | Applied in |
+|---|---|---|
+| **Q-ACC-1** | The **Manager creates accounts** (chooses username and initial password) and gives credentials to the employee directly. **No self-service password reset**; a forgotten password is replaced by the **Manager setting a new password**. Passwords stay securely hashed; the Manager can never read an old password; no email / SMS reset delivery. | SECURITY §2, API A2/A3, DATABASE §3 |
+| **Q-EXP-1** | **No expense file attachments** in V1. | DATABASE §14, API |
+| **Q-EXP-2** | Expenses have **no Finalized state**; the Manager edits an expense directly and **every edit is audited** (who, when, changed fields). No `finalized_at`, no adjustment rows for ordinary correction. | DATABASE §14/§18, API |
+| **Q-EXP-3** | **Sales / Reception may record daily Materials / Medical Supplies and Petty / Miscellaneous expenses** (create only: no list, edit, reports or other categories). Entries show who created them and in which role (the creator is never overwritten by a Manager edit). Sales reads the allowed categories through a read-only lookup and cannot manage categories. | DATABASE §14, SECURITY §4, API |
+| **Q-FDB-1** | Feedback requests / links **do not expire** in V1. No Expired status, `expires_at`, job J6 or timeout. | DATABASE §16, API B6/B10 |
+| **Q-FDB-2** | Visit Completed → Feedback Request → Sales sees it and sends the unique link → Patient submits on the **clinic website** (secure unguessable token, no login, no manual identification, no predictable patient id) → Submitted. | DATABASE §16, API, SECURITY §3 |
+| **Q-FDB-3** | **Second path:** Sales / Reception may **enter Patient Feedback about a Doctor directly** (rating, comment; source `SalesEntered`, actor stored). When it is about a Visit that has a feedback request, the entry **links that request and marks it Submitted** (the public token then behaves as already submitted); general feedback may have no Visit and no request; at most one accepted result per request. Only the **Manager** reads feedback results; Doctors and Sales do not. | DATABASE §16, SECURITY §4, API |
+| **Q-DOC-1** | **No printed receipt, printed invoice or tax-compliant invoice** in V1. Payment confirmation is system data only. | API, DEPLOYMENT |
+| **Q-DOC-2** | **No digital consent forms**, e-signature or consent document storage in V1. | API |
+| **Q-PRV-1** | Sales / Reception **may see Patient DOB, Referral Destination / Type and Referral Reason**, but **never the referring Doctor's Notes** (`notes` is absent from every Sales DTO). Sales still receives no clinical notes, root-canal measurements, procedure notes, prescription medication details, Doctor percentage, Doctor Share, Clinic Share or protected Lab financial data. The structured Medical History exception is unchanged. | SECURITY §4, API |
+| **Q-BRN-1** | **Single branch.** No `branch_id`, branch module, selector or cross-branch report. Multi-branch is future scope. | BASELINE |
+
+## 2.5 Operations
+
+| ID | ANSWERED — OWNER DECISION | Applied in |
+|---|---|---|
+| **OPS-2** | **No Owner-imposed country / region restriction** for hosting. A technically suitable provider / region is used; production must comply with applicable law and provider requirements at deployment time. "Egypt-only hosting" is not encoded. | DEPLOYMENT §1 |
+| **OPS-3** | **DigitalOcean**, preferred region **Frankfurt**. Linux Droplet (about **2 vCPU / 4 GB RAM**) running Caddy, the React SPA, the ASP.NET Core API and the Worker, with **Managed PostgreSQL**. Sizing stays configurable and validated at deployment; no pricing claim in the architecture. | DEPLOYMENT §1 |
+| **OPS-4** | **RPO = 5 minutes, RTO = 4 hours** for the realistic failures; a total provider / account loss is an honest exception documented in DEPLOYMENT §3.2. | DEPLOYMENT §3 |
+| **OPS-1a** | The **Clinic Manager, as a person, holds both backup recovery private keys** (the physical locations are the deferred part, OPS-1 above). | DEPLOYMENT §3 |
+| **OPS-5** | Primary operator: **project developer / system owner**. Backup critical-alert contact: **Clinic Manager**. Application role permissions are not tied to on-call or backup custody. | DEPLOYMENT §3/§4 |
+
+---
+
+# 3. TECHNICAL INTERPRETATIONS (not questions)
+
+These are engineering readings of confirmed rules, listed so the Owner can veto any of them. None is an open business question.
+
+| # | Interpretation | Why it is needed |
+|---|---|---|
+| T1 | The moment of "collection" for Doctor earning, Sales commission and the payroll month is the moment money is **allocated to a Charge** (for a direct payment = payment time; for Patient Credit = the moment the credit is applied). Unapplied credit is not yet commission or entitlement. | Patient Credit rule |
+| T2 | General Lab "rate at payment time" = rate at the allocation moment (identical to payment time for direct payments). | Same |
+| T3 | Sales commission base = net allocations of **all Charge kinds** (treatment, ortho, consultation) collected from the Sales employee's attributed patients; refunds / reversals reduce it in the month they occur. Consultation earns no **Doctor** commission (unchanged). | Q-FIN-2 says "collected money" |
+| T4 | Sales commission does not accrue to a deactivated employee after the deactivation date and is **not redirected** to anyone else; it is shown on a "not accrued — inactive Sales" report line. Walk-In / Direct money never generates commission. | Q-EMP-1, Q-PAT-1 |
+| T5 | Arrival can be recorded only for a Scheduled / Confirmed appointment of the current clinic-local day; arrival does not gate starting a Visit; the Manager is not granted the arrival action (only Sales / Reception was named). | Q-APP-4 |
+| T6 | General-lab percentage and Doctor percentages are validated so Doctor % + Lab % ≤ 100 (Clinic Share cannot go negative on general-lab cases). | Owner: Clinic Share never negative |
+| T7 | With no Active Sales employee left, open Leads / Follow-Ups become **unassigned** (NULL responsible) rather than the deactivation being refused; unassigned items trigger no reminder until the Manager assigns them. | Q-EMP-1 |
+| T8 | Sales base salary for a partial month is not prorated by the system (no rule given); the Manager uses Bonus / Deduction adjustments. Attendance never changes Sales pay. | No Owner rule |
+| T9 | Attendance statuses are `Present`, `Late`, `Absent` with optional check-in / check-out times (the Owner named attendance but no status list). | Q-ATT-1 |
+| T10 | A pre-finalization discount cannot exceed the line's price; two simultaneous writers are resolved by an `entry_seq` optimistic token (the later writer gets a conflict). | Q-FIN-3 |
+| T11 | A Doctor lowering a price below the existing discount is refused; the Visit's discount belongs to the pricing line, not to the person who last typed it. | Q-FIN-3 |
+| T12 | "Rate at collection time" for Sales commission = the rate-history revision with the greatest `effective_from ≤ allocated_at`; a reversal / refund row uses the rate of the allocation it reverses; revision `effective_from` is the database time of the save (no back-dating, no future-dating). | Q-COMM-1 |
+| T13 | "Before the first Fixed-lab priced work is financially finalized" = before the Visit that establishes the case's first Fixed-lab Treatment charge can be finalized; so revision 1 always precedes every charge and collection. | Q-FIN-1 |
+| T14 | A feedback request's state is derived (Pending / Sent / Submitted); "Submitted" = an entry of either source exists for it. | Q-FDB-2/3 |
+
+---
+
+## NOT CONFIRMED / NOT DESIGNED (not open questions and not implemented)
+
+Structured Patient Medical History Intake: allergy detail or type; medication names, doses or details; previous-surgery details; hepatitis type; heart, kidney, rheumatic or bleeding-disorder details; any "other medical condition" field. Pregnancy and Breastfeeding are female-patient-only intake questions; V1 stores no Patient sex field; unanswered / not-applicable stays NULL.
+
+Assistants: bonuses, deductions, attendance-based deductions, commissions and incentives are not confirmed and not designed. (Overtime and Manager-maintained attendance **are** confirmed, Q-OT-1 and Q-ATT-1.)
 
 ## Items that are NOT open (for the record)
 
-- Q-FIN-6's first meaning (does a Fixed Lab revision change a recognized Doctor Share): **resolved, NO**.
-- Address and Original Sales Representative are hidden from Doctors; the Sales restriction is mandatory; Doctors have no notification inbox in V1; one operational role per account; Doctors collect no payments.
+- Address and Original Sales Representative are hidden from Doctors; one operational role per account; Doctors collect no payments; Doctors have no notification inbox in V1.
+- Assistants are a staff type only (no login, account, role, dashboard, notifications or API access).
 - Inventory and X-ray are removed from scope and must not appear anywhere.
+- V1 is single clinic, single branch, no patient account / mobile app, no insurance integration, no digital consent, no printed invoice / receipt, no expense attachments, no Daily Closing, Arabic-only UI, no rendered diagram files (Mermaid source only).
 
 ## Technical defaults that are not questions (may be vetoed)
 
-Session timeouts, password policy, lockout and rate limits, reminder planner intervals and availability window, retry cap 5, `Africa/Cairo` default timezone, V1 payment validation defaults, Doctor follow-up booked with the authoring Doctor, 30-day log ceiling, sizing defaults.
+Session timeouts, password policy, lockout and rate limits, reminder planner intervals and availability window, retry cap 5, `Africa/Cairo` default timezone, Doctor follow-up booked with the authoring Doctor, 30-day log ceiling, sizing defaults.

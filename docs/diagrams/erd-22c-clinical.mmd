@@ -5,9 +5,14 @@ erDiagram
     PATIENTS ||--o{ TREATMENT_CASES : has
     PROCEDURE_TYPES ||--o{ TREATMENT_CASES : "type of"
     VISITS ||--o{ TREATMENT_RECORDS : contains
+    VISITS ||--o{ VISIT_CORRECTIONS : "controlled Doctor correction"
     TREATMENT_CASES ||--o{ TREATMENT_RECORDS : "spans visits"
     TREATMENT_CASES ||--o{ CASE_WORK_ITEMS : "billable work"
-    DOCTORS ||--o{ CASE_WORK_ITEMS : "performing doctor"
+    DOCTORS ||--o{ CASE_WORK_ITEMS : "performing doctor prices own work"
+    VISITS |o--o{ PRICING_DISCOUNT_ENTRIES : "consultation line (consultation_visit_id)"
+    CASE_WORK_ITEMS |o--o{ PRICING_DISCOUNT_ENTRIES : "work item line (case_work_item_id); XOR with the consultation line"
+    TREATMENT_RECORDS ||--o| CASE_WORK_ITEMS : "one work item per priced record"
+    DOCTORS ||--o{ VISIT_CORRECTIONS : "own Visits only (composite FK visit_id, doctor_id)"
     TREATMENT_CASES ||--o{ TREATMENT_STEPS : "root canal"
     TREATMENT_CASES ||--o{ ROOT_CANAL_MEASUREMENTS : canals
     TREATMENT_CASES |o--o| IMPLANT_DETAILS : implant
@@ -17,6 +22,24 @@ erDiagram
     PRESCRIPTIONS ||--o{ PRESCRIPTION_ITEMS : contains
     CASE_WORK_ITEMS {
         uuid id PK
+        uuid treatment_record_id "NOT NULL, unique"
+        uuid performing_doctor_id
         numeric doctor_percentage_snapshot
         numeric entered_price
+    }
+    PRICING_DISCOUNT_ENTRIES {
+        uuid id PK
+        text pricing_line_kind "WorkItem or Consultation"
+        uuid case_work_item_id "nullable, XOR"
+        uuid consultation_visit_id "nullable, XOR"
+        int entry_seq "optimistic token, highest = current"
+        numeric amount "fixed EGP, no percentage"
+        text set_by_role "DOCTOR, SALES_RECEPTION, MANAGER"
+        timestamptz set_at
+    }
+    VISIT_CORRECTIONS {
+        uuid id PK
+        uuid visit_id
+        uuid correcting_doctor_id "must be the Visit doctor"
+        text record_type
     }

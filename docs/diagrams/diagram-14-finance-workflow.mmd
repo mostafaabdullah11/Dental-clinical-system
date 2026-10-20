@@ -1,18 +1,24 @@
 flowchart TD
-    WI["Work item: Doctor, price, percentage snapshot"] --> CH["Patient Charge (insert only)"]
-    CH --> PM["Payment recorded by Sales or Manager"]
-    PM --> AL["Payment Allocation to charge"]
-    AL --> HOLD{"Attribution hold on charge?"}
-    HOLD -->|"no"| DE["Doctor Earning = collected x snapshot"]
-    HOLD -->|"yes, Q-FIN-9 OPEN"| PEND["Pending Doctor Attribution, no earning"]
-    DE --> CMP{"Lab and Clinic completion computable?"}
-    CMP -->|"general lab, unambiguous rate"| RD["Revenue Distribution: Doctor + Lab + Clinic = collected"]
-    CMP -->|"fixed lab Q-FIN-1 or rate ambiguity W2"| PC["Pending completion"]
+    WI["Work item: Doctor enters the initial Price, percentage snapshot"] --> VF["Visit finalized"]
+    FLI["Fixed-lab work: Doctor initial Fixed Lab revision 1 must exist, never treated as zero"] --> VF
+    DIS["Discount entries (fixed EGP) by Doctor, Sales or Manager, history kept"] --> VF
+    VF --> CH["Patient Charge = Price - Discount (insert only; setter, role, time copied)"]
+    CH --> ENT["Doctor entitlement = net charge x snapshot %"]
+    PM["Payment recorded by Sales or Manager"] --> AL["Manual allocation to charges"]
+    PM --> PC["Remainder = Patient Credit entry (FIFO use)"]
+    PC -.->|"applied to later charge"| AL
+    CH --> AL
+    AL --> LM{"Lab model"}
+    LM -->|"general lab"| GR["Immediate: Doctor share + Lab (rate at allocation) + Clinic"]
+    LM -->|"fixed lab"| WF["Lab-First waterfall (Diagram 15)"]
+    GR --> RD["doctor_earnings + revenue_distributions"]
+    WF --> RD
     AL --> COL["Collected"]
+    AL --> SC["Sales commission on collected money at the rate in force at collection time, Lead-sourced patients only (Walk-In / Direct = 0)"]
     CH --> BILL["Billed"]
     BILL --> OUT["Outstanding = Billed - Collected"]
     COL --> OUT
-    RD --> REP["Reports"]
-    PC --> REP
-    PEND --> REP
+    RD --> REP["Reports and payroll"]
     OUT --> REP
+    MC["Manager-only correction: Reversal, Refund, Reallocation, Replacement, price or discount correction of non-ortho charges"] -.->|"new rows, delta to current open payroll month"| RD
+    ORTC["Ortho charge: Billed = Effective Ortho Total = Gross - Discount; Gross Total, Deposit, Months and schedule owned by Orthodontics, schedule generated once at finalization and balanced against the Effective Ortho Total. Gross changes only through Orthodontics.Terms.Edit (increase only in V1). Generic price or discount correction refused (ortho.use_terms_edit). Payment reversal, refund and correction stay available"] -.-> CH

@@ -2,7 +2,7 @@ flowchart TD
     subgraph PL["Planners (every 15 min)"]
         J1["J1 Appointments tomorrow, Implant follow-ups"]
         J2["J2 Ortho installments due tomorrow (charge outstanding)"]
-        J3["J3 Follow-ups due"]
+        J3["J3 Follow-ups due (assigned Sales only; unassigned items skipped and counted by J7)"]
     end
     EV["Event: new referral, new feedback request"]
     PL --> ENQ["Enqueue with dedupe key, ON CONFLICT DO NOTHING"]

@@ -1,11 +1,31 @@
 flowchart TD
-    A["Orthodontic case created by Doctor: Upper, Lower or Appliance"] --> AP{"Appliance?"}
+    A["Doctor creates the Orthodontic case during the editable Visit: Upper, Lower or Appliance"] --> AP{"Appliance?"}
     AP -->|"yes"| FT["Appliance type: free text"]
     AP -->|"no"| TERMS
-    FT --> TERMS["Total price, deposit, months (who enters: OPEN)"]
-    TERMS --> CHG["Ortho charge established"]
-    CHG --> SCH["Installment schedule generated, one row per installment"]
-    SCH --> PAYM["Sales records payment, allocated to the ortho charge"]
+    FT --> TERMS["Doctor only stores the initial Gross Total Price, Deposit, Number of Months (Manager and Sales cannot). No charge and no installment exists yet"]
+    TERMS --> DISC["Optional fixed-EGP Discount set before finalization by Doctor, Sales or Manager"]
+    TERMS --> FINZ
+    DISC --> FINZ["Doctor finalizes the Visit: Discount snapshotted, Effective Ortho Total = Gross Total - Discount"]
+    FINZ --> VAL{"0 <= Deposit <= Effective Ortho Total?"}
+    VAL -->|"no"| REJ["Finalize fails: ortho.deposit_exceeds_effective_total. Nothing written, Deposit never altered"]
+    VAL -->|"yes"| CHG["Ortho Charge established: original = Gross, discount, Billed = Effective Ortho Total"]
+    CHG --> SCH["Equal Generated installments created ONCE from Effective Ortho Total - Deposit over the Months, last absorbs rounding"]
+    SCH --> PAYM["Sales or Manager records payment, allocated to the ortho charge"]
+    PAYM --> APPL["Sales or Manager manually applies payment to installments (installment_payments)"]
+    APPL --> ST["Installment paid, remaining and status derived"]
     PAYM --> SPLIT["Doctor share at the case percentage snapshot"]
-    PAYM -.->|"installment application pending Q-ORT-2"| APPL["Per-installment status not computed yet"]
-    SCH --> REM["Reminder to Sales one day before due date, while the charge has an outstanding balance"]
+    SCH --> REM["Reminder to Sales one day before the current due date of an active installment, while the charge has an outstanding balance"]
+    MGR["Manager edits terms later: Orthodontics.Terms.Edit is the only route for an established Gross Total, Deposit or Months (audited, reason required, only after the Charge exists)"] --> KIND{"What changed?"}
+    KIND -->|"Gross Total increased (20,000 to 24,000)"| DIFF["One positive PriceChange installment of 4,000. Billed +4,000, Discount snapshot kept, existing installments and payments untouched"]
+    KIND -->|"Gross Total decreased (20,000 to 18,000)"| DEC["Rejected in V1: ortho.total_decrease_not_supported. No negative installment, no automatic reduction, no workaround (Q-ORT-3b deferred)"]
+    KIND -->|"Deposit changed"| DEPC["Deposit validated against the Effective Ortho Total"]
+    KIND -->|"Number of Months changed"| MCHK{"New Months >= active regular installments that have payments?"}
+    MCHK -->|"no"| MREJ["Rejected: ortho.months_conflict_with_paid_history"]
+    MCHK -->|"yes"| UNB
+    DEPC --> UNB["Revision row only. NO automatic regeneration, addition, removal or redistribution. requires_schedule_adjustment = true (derived, not a status)"]
+    UNB --> ADJ["Manager manually adjusts the schedule in one atomic batch: revise amounts, revise due dates of unpaid installments, ADD future ManagerAdded installments, RETIRE unpaid installments (never delete)"]
+    ADJ --> CHK{"Deposit + sum of active installments = Effective Ortho Total, active regular installments = Number of Months, paid history intact?"}
+    CHK -->|"no"| BAD["Batch rejected, nothing written: ortho.schedule_unbalanced, ortho.month_plan_mismatch, ortho.installment_below_paid_amount or ortho.installment_has_payment_history"]
+    CHK -->|"yes"| BAL["Schedule valid"]
+    DIFF --> BAL
+    GEN["Generic PriceCorrection, DiscountCorrection or Finance.Charges.Adjust aimed at an ortho charge"] --> USE["Rejected: ortho.use_terms_edit"]

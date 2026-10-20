@@ -1,9 +1,18 @@
 flowchart TD
-    V["Visit finalized"] --> R["Feedback request created: Pending"]
+    V["Visit finalized / Completed"] --> R["Feedback request created: Pending"]
     R --> Q["Sales feedback queue and notification"]
-    Q --> L["Sales issues website link (fresh token)"]
+    Q --> L["Sales issues website link (unguessable token, no expiry)"]
     L --> S["Marked Sent: channel, sender, date"]
-    S --> W["Patient opens clinic website and submits"]
-    W --> SUB["Submitted: rating and comment"]
-    S -.->|"expiry period Q-FDB-1 OPEN, job inert"| EXP["Expired"]
+    S --> W["Website token path: patient opens clinic website and submits"]
+    W --> CHK{"Request already has a result?"}
+    CHK -->|"no"| SUB["feedback_entries: source PatientWeb (request becomes Submitted, derived)"]
+    CHK -->|"yes"| DUP["Neutral already-submitted answer, no second entry"]
+    SE["Sales-entered path: Sales records the patient's feedback about a Doctor"] --> VQ{"About a Visit that has a request?"}
+    VQ -->|"yes"| CHK2{"Request already has a result?"}
+    CHK2 -->|"no"| LNK["Entry links that request: source SalesEntered, actor stored; request becomes Submitted and the public link is now already-submitted"]
+    CHK2 -->|"yes"| DUP2["409 already submitted, no second entry"]
+    VQ -->|"no"| GEN["General feedback: no Visit and no request, source SalesEntered, actor stored"]
+    SUB --> RES["Manager reads results (Doctors and Sales do not)"]
+    LNK --> RES
+    GEN --> RES
     L -.->|"V1 manual, automated channels future"| FUT["WhatsApp, SMS, Email via channel abstraction"]

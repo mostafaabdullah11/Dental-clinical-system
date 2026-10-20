@@ -1,5 +1,6 @@
 flowchart TD
-    S["Open patient"] --> V["Start visit (Draft / In Progress)"]
+    S["Open patient"] --> MHR["Doctor reads the Medical History Intake (read-only)"]
+    MHR --> V["Start visit from the Doctor queue or directly"]
     V --> TA["Select tooth or area"]
     TA --> PR{"Procedure"}
     PR --> RC["Root Canal"]
@@ -16,16 +17,17 @@ flowchart TD
     FI --> PRICE
     EX --> PRICE
     PE --> PRICE
-    IM --> LAB["Fixed lab entered once per case"]
+    IM --> LAB["Doctor enters the INITIAL fixed lab amount once per case, required before the first Fixed-lab charge (Manager may only revise later; unknown is never zero)"]
     FP --> LAB
     RP --> LAB
     LAB --> PRICE
     SC --> PRICE
     OR --> PRICE
     OT --> PRICE
-    PRICE["Doctor enters price for own work item (no discount)"] --> N["Clinical notes"]
+    PRICE["Doctor enters the initial Price for own work item (Manager has no initial-price authority); Discount (fixed EGP) may be set by Doctor, Sales or Manager before finalization: Total = Price - Discount"] --> N["Clinical notes"]
     N --> RX{"Prescription needed?"}
     RX -->|"yes"| RXC["Create prescription"]
     RX -->|"no"| NA
     RXC --> NA{"Next appointment or referral?"}
-    NA --> FIN["Finalize visit"]
+    NA --> FIN["Finalize visit: charges created, unused booked time released"]
+    FIN -.->|"correction of own finalized visit: controlled, audited"| COR["Visit correction row"]

@@ -1,6 +1,8 @@
 flowchart TD
-    D["Doctor creates referral: Surgery, Implant, Orthodontics, Prosthetics, Other"] --> N["Status New, appears to Sales and notifies Sales"]
-    N --> C["Sales contacts patient"]
+    D["Doctor creates referral: Surgery, Implant, Orthodontics, Prosthetics, Other (with reason and Doctor notes)"] --> N["Status New, appears to Sales and notifies Sales"]
+    D -.-> DN["Doctor notes: visible to Doctors and Manager only"]
+    N --> SV["Sales sees destination / type and reason, never the Doctor notes"]
+    SV --> C["Sales contacts patient"]
     C --> CT["Status Contacted"]
     CT --> B["Booked"]
     CT --> LOST["Lost"]

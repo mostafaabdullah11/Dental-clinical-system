@@ -1,8 +1,9 @@
 flowchart TD
     M["Manager selects Doctor"] --> W["Select future week"]
     W --> D["Select available days"]
-    D --> R["Enter time ranges (overlaps rejected)"]
+    D --> R["Enter time ranges"]
     R --> PUB["Publish schedule"]
     PUB --> SV["Sales sees bookable slots"]
     PUB --> DV["Doctor sees own published schedule"]
-    SV --> BK["Book: double-booking blocked by unique slot"]
+    SV --> BK["Book with manual duration, overlap allowed"]
+    BK --> VE["Visit ends early: unused booked time released"]

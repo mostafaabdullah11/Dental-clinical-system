@@ -1,12 +1,12 @@
 flowchart TB
-    SPA["React + TypeScript SPA"]
+    SPA["React + TypeScript SPA (Arabic RTL only)"]
     PROXY["Caddy reverse proxy (HTTPS)"]
     subgraph API["Clinic.Api (one process)"]
         direction TB
         MODS["Identity, Audit, Configuration, Staff, Patients, Scheduling, Clinical, Prescriptions, Orthodontics, Crm, Finance, Expenses, Payroll, Notifications, Feedback, Reporting"]
     end
     subgraph WRK["Clinic.Worker (Hangfire)"]
-        JOBS["Planners J1-J3, Dispatcher J4, Retry J5, Feedback expiry J6, Operations health J7"]
+        JOBS["Planners J1-J3, Dispatcher J4, Retry J5, Operations health J7"]
         NE["Notification engine (InAppChannel)"]
     end
     DB[("Managed PostgreSQL, one schema per module")]

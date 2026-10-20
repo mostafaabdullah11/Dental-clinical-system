@@ -1,10 +1,16 @@
 flowchart LR
-    L["Lead"] --> P["Patient"]
-    P --> A["Appointment"]
-    A --> D["Visit / Doctor treatment"]
+    L["Lead (Original Sales Employee)"] --> P["Patient"]
+    W["Walk-in / Direct"] -->|"patient_source WalkIn, no Original Sales Employee, zero Sales commission"| P
+    L -.->|"patient_source Lead, Original Sales Employee preserved"| P
+    P --> A["Appointment (status Scheduled or Confirmed)"]
+    P --> MH["Medical History Intake by Sales / Reception"]
+    A --> AR["Sales records arrival (event, status unchanged)"]
+    AR --> Q["Doctor queue (derived from arrival)"]
+    Q --> D["Doctor starts the Visit"]
+    D --> IT["Appointment becomes In Treatment; patient leaves the queue"]
+    MH -.->|"Doctor reads it if it exists"| D
     D --> T["Treatment"]
     T --> PAY["Payment"]
     PAY --> F["Follow-Up"]
     F --> FB["Feedback"]
-    W["Walk-in"] -.->|"direct registration, no Original Sales Employee assumed"| P
-    L -.->|"Original Sales Employee preserved"| P
+    NOTE["No Arrived or Waiting status exists"] -.-> AR

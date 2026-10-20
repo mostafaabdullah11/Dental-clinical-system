@@ -1,10 +1,10 @@
 # DEPLOYMENT_ARCHITECTURE.md
 
 **Design Baseline Version:** 1.1
-**Status:** PROPOSED FREEZE — AWAITING OWNER APPROVAL
-**Scope:** Steps 12 (Deployment), 13 (CI/CD) and 14 (Backup, Restore, Monitoring, Alerting) as approved, including the Steps 12–13 corrections (schema compatibility, non-transactional migrations, Data Protection key grants) and the Step 14 corrections (post-restore password security, `clinic_backup` grants, J7 inactive-owner lookup, backup-key custody). This document adds no business rule, no business table and no permission assignment.
+**Status:** OWNER APPROVED — FROZEN FOR V1 IMPLEMENTATION (approved 2026-10-20)
+**Scope:** Steps 12 (Deployment), 13 (CI/CD) and 14 (Backup, Restore, Monitoring, Alerting) as approved, **synchronized with the Owner Review decisions and the final Owner business changes**: provider DigitalOcean with preferred region Frankfurt (OPS-3, a technical decision for the current design), no Owner-imposed hosting region (OPS-2), RPO 5 minutes / RTO 4 hours (OPS-4), operator and backup contacts (OPS-5), Manager-set passwords with no reset delivery (Q-ACC-1), Arabic-only RTL frontend and Arabic server-side print (Q-UI-1), single branch (Q-BRN-1), and the revised ledger invariants. Single branch, single clinic. The only deferred operational detail is OPS-1 (**where** the two backup recovery private keys are physically stored; the Manager as a **person** holds both keys, which is confirmed). This document adds no business rule, no business table and no permission assignment.
 
-Labels: **CONFIRMED** = from the user's requirements (Docker, Linux, HTTPS, cloud-hosted server, managed PostgreSQL preferred, reverse proxy, Development/Staging/Production, configurable clinic timezone, GitHub Actions, no destructive migration at startup, no Kubernetes, automated encrypted off-site backups, retention, restore testing, PITR if supported, simple affordable monitoring, RPO/RTO in clinic language). **TECHNICAL** = engineering design. **DEFAULT** = veto-able value. **OPEN** = undecided.
+Labels: **CONFIRMED** = from the Owner's requirements and decisions (Docker, Linux, HTTPS, cloud-hosted server, managed PostgreSQL, reverse proxy, Development/Staging/Production, configurable clinic timezone, GitHub Actions, no destructive migration at startup, no Kubernetes, automated encrypted off-site backups, retention, restore testing, PITR, simple affordable monitoring, RPO 5 min / RTO 4 h). **TECHNICAL** = engineering design. **DEFAULT** = veto-able value. **DEFERRED** = OPS-1 only.
 
 ---
 
@@ -52,7 +52,7 @@ One backend image serves api and worker.
 
 **Recommendation: managed PostgreSQL for staging and production**; a PostgreSQL container on the VM is Development only. If budget forces a container in production, the minimum is nightly encrypted dumps plus WAL archiving, an off-host copy and a tested restore (clearly higher risk; not recommended).
 
-Provider selection criteria (provider itself undecided, non-blocking): `pg_trgm` and `btree_gist` allowed; non-superuser creation of roles and table ownership; TLS with verifiable CA, firewall allow-listing (optionally private networking); point-in-time recovery, encrypted backups and documented retention; PostgreSQL 16 or newer; region near the clinic with compliance checked; documented PITR granularity and cross-region backup support.
+**Provider (OPS-3, TECHNICAL decision for the current design): DigitalOcean, preferred region Frankfurt.** Topology: one Linux Droplet running Caddy, the React SPA, the ASP.NET Core API and the Worker (Docker), plus **Managed PostgreSQL**. **OPS-2 (CONFIRMED): the Owner imposes no country / region restriction on hosting**; a technically suitable provider and region are used, and production must still comply with applicable law and the provider's requirements at deployment time. Nothing in the architecture encodes a hosting country. Exact Droplet and database sizing stays configurable and is validated at deployment stage; **no pricing claim is made in this document.** Selection criteria that the managed database must be verified against at deployment: `pg_trgm` and `btree_gist` allowed; non-superuser creation of roles and table ownership; TLS with verifiable CA; firewall / VPC allow-listing; point-in-time recovery whose documented granularity supports the 5-minute RPO; encrypted backups with documented retention; PostgreSQL 16 or newer.
 
 ## 1.5 Host and container hardening
 
@@ -92,9 +92,9 @@ Key ring stored in `infra.data_protection_keys`, encrypted by a certificate supp
 | Deletion | Never by the application. Cleanup, if ever wanted, is an operator action using migrator credentials. |
 | Audit | The audit interceptor skips this table |
 | Certificate | Docker secret **mounted only in the `api` container** |
-| Operator commands | First-Manager command, reset-token issuance and `post-restore-lockdown` run with `docker compose exec api …` (it has the certificate and the app role) |
+| Operator commands | First-Manager command, `set-manager-password` (break-glass) and `post-restore-lockdown` run with `docker compose exec api …` (it has the certificate and the app role) |
 
-Lost keys invalidate every session and outstanding reset token; no data is lost. After a restore, the key table is empty and the application creates a fresh key ring on first use.
+Lost keys invalidate every session; no data is lost. After a restore, the key table is empty and the application creates a fresh key ring on first use.
 
 ## 1.9 Compose sketch (illustrative)
 
@@ -152,13 +152,13 @@ One VM is a single point of failure: if it dies the clinic is down until a repla
 
 ## 1.11 Sizing defaults (DEFAULT)
 
-VM 2 vCPU / 4 GB RAM / 40 GB disk; managed PostgreSQL smallest production tier with ≥ 2 GB RAM and 20 GB storage (autoscaling if offered); staging half size. Measured and adjusted after UAT.
+**Initial sizing (Owner direction, configurable, no prices stated): approximately 2 vCPU and 4 GB RAM for the application Droplet** (disk sized at deployment); managed PostgreSQL at the smallest production tier that meets the provider selection criteria listed under the provider decision (≥ 2 GB RAM, storage with growth headroom); staging smaller. Sizing is a deployment variable, not an architectural constant: it is measured and adjusted after UAT without a design change. This document quotes no provider price.
 
 ## 1.12 Points to be aware of
 
-1. **Data residency and legal compliance for health data** need a legal check before choosing the region; nothing is assumed (OPEN, OPS-2).
+1. **Hosting region (OPS-2, CONFIRMED):** no Owner restriction; Frankfurt is the preferred technical choice. Legal and provider compliance for health data is checked at deployment time; nothing about a country is encoded.
 2. Cost versus risk: managed database plus a separate staging instance is safer and more expensive.
-3. Provider choice is deliberately open; nothing depends on a vendor.
+3. DigitalOcean is the current provider decision (OPS-3); the application remains vendor-neutral (Docker, standard PostgreSQL, S3-compatible object storage) so a later change is configuration, not redesign.
 
 ## 1.13 Deployment verification checklist (the smoke test)
 
@@ -310,21 +310,21 @@ Canary scans, role matrix, startup route test, architecture and scope tests: PR 
 | Secrets (DB role passwords, `dp_cert`) | VM secrets directory | Encrypted copy off the VM; passwords re-issuable |
 | Caddy certificates | Docker volume | Re-issued automatically |
 | Logs | Host, rotated | Not backed up; audit history is in the database |
-| Uploaded files | **None exist in V1** | If expense attachments are later required (Q-EXP-1), file backup is added then |
+| Uploaded files | **None exist in V1** | No expense attachments (Q-EXP-1: none in V1), no consent documents, no receipts / invoices; no file backup is needed |
 
 No business data is encrypted with an application-held key, so a lost certificate only signs everyone out. The **backup decryption key** is the one key whose loss is serious.
 
 ## 3.2 RPO and RTO in clinic language
 
-RPO: how much recent work might have to be re-entered. RTO: how long the system might be unavailable. **DEFAULT, for the Manager's acceptance, not blocking:**
+RPO: how much recent work might have to be re-entered. RTO: how long the system might be unavailable. **CONFIRMED (OPS-4): RPO = 5 minutes, RTO = 4 hours.**
 
 | Scenario | Clinic experience | RPO | RTO |
 |---|---|---|---|
-| **A. VM fails, database fine** | Down until a replacement server is up; no data lost | **None** | **4 h** (about 1–2 h once rehearsed) |
-| **B. Database damaged / bad change corrupts data** | Restore to just before the problem; later entries re-entered | **5 min** | **4 h** |
-| **C. Cloud provider or account lost** | Rebuild elsewhere from the off-site nightly copy; up to a day re-entered | **24 h** | **1 business day** |
+| **A. VM fails, database fine** | Down until a replacement Droplet is up; no data lost | **None** | **≤ 4 h** (about 1–2 h once rehearsed) |
+| **B. Database damaged / bad change corrupts data** | Point-in-time restore to just before the problem; at most the last 5 minutes re-entered | **≤ 5 min** | **≤ 4 h** |
+| **C. Provider or account lost (disaster)** | Rebuild elsewhere from the off-site nightly copy | up to 24 h unless continuous off-site WAL archiving is added at deployment (TECHNICAL option) | 1 business day |
 
-Scenario B's 5 minutes depends on the provider's documented PITR granularity and is not claimed until verified at provider selection. The clinic needs a manual paper process for scenarios A–C; that is the clinic's operational decision and no feature is designed for it.
+**Honest exception:** the confirmed 5-minute / 4-hour targets apply to scenarios A and B (the realistic ones) and are **not promised for scenario C** (loss of the provider or account), where the nightly off-site copy gives up to 24 h of loss and about a business day to rebuild unless continuous off-site archiving is added. The targets are designed for scenarios A and B and rely on the managed database's PITR granularity, **verified at deployment before go-live**. Scenario C is a disaster outside those targets unless the optional continuous off-site archive is configured. The clinic needs a manual paper process for downtime; that is the clinic's operational decision and no feature is designed for it.
 
 ## 3.3 Backup design (three layers)
 
@@ -340,18 +340,18 @@ Scenario B's 5 minutes depends on the provider's documented PITR granularity and
 |---|---|
 | Schedule (DEFAULT) | Daily 23:00 UTC via systemd timer on the VM (fixed UTC, DST never moves it) |
 | Runs as | `docker compose run backup` |
-| **DB access: `clinic_backup`** | Explicit SELECT only. **No `pg_read_all_data`.** Grants: USAGE on each business schema, `identity`, `audit`, `configuration`, `hangfire`; SELECT on every table in those schemas and on their sequences; SELECT on `infra.__EFMigrationsHistory`. **`infra.data_protection_keys`: no grant (SELECT fails).** Anything else in `infra` and every write privilege: none. Connection from the VM address only, TLS required, `CONNECTION LIMIT 2`. Held **only** in the backup container's secret. The CI grant-decision rule requires a backup-grant decision for every new table. **v1.1:** `staff.assistants` and `payroll.assistant_payrolls` are inside the granted schemas and are explicitly SELECT-able by `clinic_backup`; `clinic_worker` has no access to either; no new secret, container or topology change. |
+| **DB access: `clinic_backup`** | Explicit SELECT only. **No `pg_read_all_data`.** Grants: USAGE on each business schema, `identity`, `audit`, `configuration`, `hangfire`; SELECT on every table in those schemas and on their sequences; SELECT on `infra.__EFMigrationsHistory`. **`infra.data_protection_keys`: no grant (SELECT fails).** Anything else in `infra` and every write privilege: none. Connection from the VM address only, TLS required, `CONNECTION LIMIT 2`. Held **only** in the backup container's secret. The CI grant-decision rule requires a backup-grant decision for every new table. **v1.1:** `staff.assistants`, `staff.attendance_records`, `staff.assistant_overtime_entries`, `payroll.assistant_payrolls` and `payroll.assistant_payroll_overtime_items` are inside the granted schemas and are explicitly SELECT-able by `clinic_backup`; `clinic_worker` has no access to either; no new secret, container or topology change. |
 | `pg_dump` flags | `--exclude-table-data=infra.data_protection_keys` (definition kept so a restore is structurally complete; no data read, so no SELECT needed). Triggers, functions, constraints, ACLs read from catalogs. |
 | Consistency | One transaction snapshot for the dump, manifest and integrity checks |
 | Contents | The whole database incl. `hangfire` and `infra.__EFMigrationsHistory`; **no Data Protection key rows** |
-| **Encryption** | Client-side with `age` to **two independent recovery recipients**. **Either private key alone decrypts the backup**: redundancy, **not two-person approval** (two-person control needs a different key-management design, not in V1). **Custody is OPEN (OPS-1) and not tied to any application role**, including the Manager role: a backup holds password hashes, the audit log and every clinical and financial record. Neither private key is ever on the VM; losing both makes off-site backups unreadable. Public keys are deployment configuration. |
+| **Encryption** | Client-side with `age` to **two independent recovery recipients**. **Either private key alone decrypts the backup**: redundancy, **not two-person approval** (two-person control needs a different key-management design, not in V1). **The Clinic Manager, as a person, holds both private keys (OPS-1, CONFIRMED part); the exact storage locations are DEFERRED to deployment / go-live and are not invented here.** Holding a key is a custody duty of that person, not an application permission, and no application role (including the application MANAGER role) is tied to backup custody: a backup holds password hashes, the audit log and every clinical and financial record. **Neither private key is ever on the production VM;** losing both makes off-site backups unreadable. Public keys are deployment configuration. |
 | Upload | **Write-only** credentials (put object only); bucket versioning and **object lock** for 30 days; expiry by lifecycle rules set with separate admin credentials. A compromised VM can add backups but cannot read or delete them. |
 | Verification (every run) | Exit code; size ≥ 80% of the previous dump and non-zero; `pg_restore --list`; SHA-256 recorded; uploaded object size/checksum compared |
-| Manifest (every run) | Per-table row counts, latest audit id, ledger totals (Σ payments, Σ allocations, Σ earnings), stored beside the dump |
-| Integrity checks (every run, same snapshot) | Read-only ledger queries: a distribution's parts not summing to its allocation; a payment whose allocations exceed it; a charge whose Collected exceeds Billed; an earning with no allocation; a pending attribution that also has an earning. Any hit fails the job and raises a **critical** alert. The "allocations equal the payment amount" check mirrors the V1 validation default and is relaxed if that default is. |
+| Manifest (every run) | Per-table row counts, latest audit id, ledger totals (Σ payments, Σ allocations, Σ credit entries, Σ entitlements, Σ earnings), stored beside the dump |
+| Integrity checks (every run, same snapshot) | Read-only ledger queries: a distribution event whose Lab + Clinic + Doctor earnings do not sum to its allocation basis (G8b); a payment whose `allocations + credit entries` do not equal its amount (G8); a patient with a negative Patient Credit balance; a charge whose net Collected exceeds Billed; a negative cumulative Clinic Share; an allocation whose recognized earnings exceed its entitlements; a fixed-lab case whose Lab-First waterfall replay differs from its recorded rows; an Assistant payroll whose `final_amount` differs from base pay + its overtime items, or an overtime entry attached to two payrolls or to a payroll of another month; a pricing-discount entry that exceeds its line's price. Any hit fails the job and raises a **critical** alert. |
 | Heartbeat | Success pings the monitor; **no ping within 26 hours = critical alert** |
 
-**Retention (DEFAULT):** provider PITR window 14 days (or provider maximum if cheap); nightly off-site 30 days; monthly 12 months; yearly 3 years. The live database keeps all clinical and financial history forever (no physical deletes); backups exist for recovery and are **not** the legal archive. **OPEN (OPS-2):** legal retention periods for medical/financial records and whether any controlled-erasure workflow must reach backups; nothing assumed, no erasure workflow designed.
+**Retention (DEFAULT):** provider PITR window 14 days (or provider maximum if cheap); nightly off-site 30 days; monthly 12 months; yearly 3 years. The live database keeps all clinical and financial history forever (no physical deletes); backups exist for recovery and are **not** the legal archive. **No Owner retention rule (OPS-2):** legal retention periods for medical/financial records and whether any controlled-erasure workflow must reach backups; nothing assumed, no erasure workflow designed.
 
 ## 3.4 Restore and restore testing
 
@@ -366,15 +366,16 @@ Drills use real patient data so they **never run in staging**; they run in a thr
 
 ### Mandatory post-restore lockdown (security)
 
-The audit log never holds passwords, hashes or reset tokens, so **a password change after the restore point cannot be reconstructed from it**; the restored Identity row holds the old hash and Password A would be valid again. Operator command **`post-restore-lockdown`** runs inside the `api` container before the restored system opens to users:
+The audit log never holds passwords or hashes, so **a password change after the restore point cannot be reconstructed from it**; the restored Identity row holds the old hash and an old password would be valid again. Operator command **`post-restore-lockdown`** runs inside the `api` container before the restored system opens to users:
 
-1. **Rotate every security stamp** (signs everyone out; invalidates outstanding reset tokens).
-2. **Passwords.** *Default conservative action:* set `password_hash = NULL` and `password_reset_required = true` for **all staff accounts**; login is refused until a new reset completes. *Narrowed action, only with reliable evidence:* if the pre-restore instance's audit log is intact, password-change/reset **events** (never values) after the restore point identify the affected users and only they are forced to reset; if the audit log is unavailable or incomplete the default applies.
+1. **Rotate every security stamp** (signs everyone out).
+2. **Passwords (Q-ACC-1).** Lock every non-Manager staff account (maximum lockout). The operator sets the Manager's password with the local `set-manager-password` command; the Manager then **sets a new password for each employee** through the normal Set Password action (which clears the lockout). *Narrowed action, only with reliable evidence:* if the pre-restore instance's audit log is intact, password-set **events** (never values) after the restore point identify the affected users and only they are locked; otherwise every non-Manager account is. There are no reset tokens and no delivery channel to configure.
 3. **Re-apply deactivations and role changes** after the restore point where the old instance's audit gives reliable evidence; anything unverifiable is unknown and the Manager reviews the staff list before reopening.
-4. Re-run integrity queries and the Finance invariants.
+4. Re-run integrity queries and the Finance invariants (G8, G8b, Fixed-lab replay).
 5. Notifications: dedupe keys prevent duplicate rows; reminders sent after the restore point may be regenerated (minor, expected).
 
-Delivery of the new reset tokens stays the **open account-recovery configuration**; no delivery workflow is assumed. Lost Manager access uses the existing operator recovery command. This is a security recovery mechanism, not a clinic business rule. Restore runs as `clinic_migrator` after `bootstrap-roles.sql` so ACLs and ownership restore correctly; after a restore the key table is empty and the application creates a fresh Data Protection key ring.
+This is a security recovery mechanism, not a clinic business rule. Restore runs as `clinic_migrator` after `bootstrap-roles.sql` so ACLs and ownership restore correctly; after a restore the key table is empty and the application creates a fresh Data Protection key ring.
+
 
 ## 3.5 Monitoring: simple, affordable, low-maintenance
 
@@ -385,7 +386,7 @@ Few moving parts, no inbound exposure, and **no personal data in any alert, even
 | External uptime | Hosted monitor checks `https://<domain>/health/live` every minute, plus TLS and domain expiry |
 | Heartbeats / dead-man's switch | Healthchecks-style service; each check pings a URL and alerts when pings stop |
 | Host checks | One small script every 5 minutes (cron/systemd timer) pings the heartbeat service |
-| Exceptions | Sentry-compatible tracker for API, Worker and SPA behind the scrubber, request bodies disabled. Hosted tracking is a data-residency question (OPS-2); fallback: self-hosted GlitchTip on a separate small VM, or none, relying on logs plus log-derived alerts. |
+| Exceptions | Sentry-compatible tracker for API, Worker and SPA behind the scrubber, request bodies disabled. Hosted tracking is acceptable subject to the scrubber and the OPS-2 compliance check at deployment; fallback: self-hosted GlitchTip on a separate small VM, or none, relying on logs plus log-derived alerts. |
 | Database | Provider metrics and alert rules |
 | Dashboards | None in V1; Hangfire dashboard stays behind the SSH tunnel |
 
@@ -405,9 +406,9 @@ Few moving parts, no inbound exposure, and **no personal data in any alert, even
 | Authentication failures | Caddy log counts (route/status only) | > 30 failed logins in 10 min; > 20 rate-limit responses in 10 min; > 20 forbidden responses on role routes in 10 min | Warning |
 | Certificates and domain | External monitor | TLS < 14 days (warning), < 5 days (critical); domain < 30 days | Warning, Critical |
 
-**Job J7 "operations health"** (Notifications module, Worker, every 5 minutes, only the Worker's existing grants): job freshness/heartbeat; dispatcher lag; exhausted retries; Hangfire failed-job count; count of follow-ups assigned to an inactive Sales employee (information only, weekly digest, because Q-EMP-1 is OPEN). **Inactive-owner lookup:** contract `Staff.Contracts.IActiveSalesEmployeeDirectory.IsActive(salesEmployeeId)` (plus batch form) backed by the minimal view `staff.v_sales_employee_activity (sales_employee_id, is_active)` (owned by `clinic_migrator`, not `security_invoker`). The Worker has SELECT on that view only: no access to `staff.sales_employees` or `staff.doctors`, so salary, commission, percentages and profile details are unreachable. Notifications cannot depend on Staff, so the count is produced by **Crm** (which may depend on Staff) through a Notifications-defined probe port. The same directory answers "nothing is sent to an inactive owner" in J3. J7 pings success, or failure with a fixed message and counts; never names, ids or text.
+**Job J7 "operations health"** (Notifications module, Worker, every 5 minutes, only the Worker's existing grants): job freshness/heartbeat; dispatcher lag; exhausted retries; Hangfire failed-job count; count of **open** follow-ups assigned to an inactive Sales employee (expected 0 because deactivation redistributes them evenly, Q-EMP-1; a non-zero count is an integrity alert). **Inactive-owner lookup:** contract `Staff.Contracts.IActiveSalesEmployeeDirectory.IsActive(salesEmployeeId)` (plus batch form) backed by the minimal view `staff.v_sales_employee_activity (sales_employee_id, is_active)` (owned by `clinic_migrator`, not `security_invoker`). The Worker has SELECT on that view only: no access to `staff.sales_employees` or `staff.doctors`, so salary, commission, percentages and profile details are unreachable. Notifications cannot depend on Staff, so the count is produced by **Crm** (which may depend on Staff) through a Notifications-defined probe port. The same directory is used by the dispatcher. J7 pings success, or failure with a fixed message and counts; never names, ids or text.
 
-**Alert routing (DEFAULT):** Critical = immediate SMS/phone push **and** email to the operator, escalating to a named backup contact if unacknowledged for 30 minutes; Warning = email plus weekly digest; Info = weekly digest. One freelancer is a single point of failure for alerts; a named backup contact and a handover runbook are recommended (operational, not a design change). Weekly 10-minute review: open warnings, last backup log, next drill date, OS/image patch status, certificate dates.
+**Operations contacts (OPS-5, CONFIRMED):** the primary operator is the **project developer / system owner**; the **backup critical-alert contact is the Clinic Manager**. Application role permissions are not tied to on-call or backup custody. **Alert routing (DEFAULT):** Critical = immediate SMS/phone push **and** email to the operator, escalating to the backup contact if unacknowledged for 30 minutes; Warning = email plus weekly digest; Info = weekly digest. A handover runbook is recommended (operational, not a design change). Weekly 10-minute review: open warnings, last backup log, next drill date, OS/image patch status, certificate dates.
 
 ## 3.6 Logging retention
 
@@ -429,23 +430,27 @@ Docker log rotation bounded by size and file count (e.g. 5 × 100 MB per contain
 | 10 | Canary scrub: error-tracker events and every ping/alert body contain no contact or clinical canary |
 | 11 | Caddy access logs contain no query strings, bodies or identifiers beyond route templates |
 | 12 | The backup decrypts independently with **each** configured recovery private key; custody identities are deployment configuration and no test or code refers to a role |
-| 13 | **Password regression:** a user has Password A, changes to Password B, the database is restored to before the change. Without lockdown A would work; after `post-restore-lockdown` login with A fails, the account is in reset-required state and normal use is impossible until a new reset completes |
-| 14 | Lockdown rotates all stamps; pre-restore sessions and outstanding reset tokens fail; a user deactivated after the restore point is handled by step 3 or Manager review |
-| 15 | The narrowed action covers only users with a password event in the old audit; a missing/incomplete audit falls back to all staff |
+| 13 | **Password regression:** a user has Password A, the Manager sets Password B, the database is restored to before the change. Without lockdown A would work; after `post-restore-lockdown` the account is locked, login with A fails, and normal use is impossible until the Manager sets a new password |
+| 14 | Lockdown rotates all stamps; pre-restore sessions fail; a user deactivated after the restore point is handled by step 3 or Manager review |
+| 15 | The narrowed action covers only users with a password-set event in the old audit; a missing / incomplete audit falls back to all non-Manager staff |
 | 16 | A dump produced by the restricted `clinic_backup` role **restores completely** (manifest counts, ledger totals, triggers, grants, constraints) |
 | 17 | `clinic_backup` SELECT on `infra.data_protection_keys` fails; no write privilege anywhere; not a member of `pg_read_all_data` |
 | 18 | The dump contains **no Data Protection key rows**; after restore the application creates a fresh key ring and old cookies are rejected |
 | 19 | The CI grant test fails when a new table lacks a backup-grant decision |
-| 20 | J7 reports inactive-owner counts using only the staff view; the Worker cannot SELECT salary, commission or any column of `staff.sales_employees` / `staff.doctors` |
-| 21 | J3 sends nothing for a follow-up whose owner is inactive; the dispatcher and J7 use the same directory |
-| 22 *(v1.1)* | `clinic_backup` can SELECT `staff.assistants` and `payroll.assistant_payrolls`; a dump restores both with their exclusion and CHECK constraints; `clinic_worker` cannot SELECT either |
+| 20 | J7 reports the open-follow-ups-with-inactive-owner count using only the staff view; the Worker cannot SELECT salary, commission or any column of `staff.sales_employees` / `staff.doctors` |
+| 21 | J3 uses the confirmed open follow-up predicate; the dispatcher and J7 use the same directory |
+| 22 | `clinic_backup` can SELECT `staff.assistants`, `staff.attendance_records`, `staff.assistant_overtime_entries`, `payroll.assistant_payrolls`, `payroll.assistant_payroll_overtime_items`, `staff.sales_commission_rate_history`, `payroll.sales_payroll_commission_items`, `clinical.pricing_discount_entries`, `feedback.feedback_entries`, `finance.patient_credit_entries`, `finance.doctor_entitlements`, `scheduling.appointment_arrivals`, `crm.responsibility_history` and the new ortho revision tables; a dump restores them with their CHECK / exclusion constraints and deferred triggers; `clinic_worker` cannot SELECT the Assistant, attendance, overtime, commission-rate, feedback-entry, finance or payroll tables |
+| 23 | **Recovery targets:** the documented PITR granularity at the chosen DigitalOcean region supports RPO ≤ 5 min; a timed restore drill on a throwaway production-grade environment completes within RTO 4 h; the drill is repeated before go-live |
+| 24 | **Frontend:** the production SPA bundle loads with `dir="rtl"`, Arabic fonts and no Latin-only layout assumptions; server-side PDF / print output is Arabic and renders right-to-left |
+| 25 | **Single branch:** no `branch_id` column exists in any table and no branch route or selector exists |
 
 ## 3.8 Points to be aware of (none blocking)
 
-1. Legal and residency check for the off-site region/provider, hosted error tracking and retention periods (OPS-2).
-2. **Backup-key custody** (who holds the two recovery private keys and where copies are stored) must be decided before go-live; custody is independent of application roles (OPS-1).
-3. RPO/RTO acceptance, retention numbers, on-call and backup contacts, monitoring vendors are defaults that may be vetoed.
-4. Provider PITR granularity and cross-region backup support are verified at provider selection.
-5. Open business items are unchanged (Q-FIN-1, Q-FIN-2, Q-FIN-3, redefined Q-FIN-6, Q-FIN-9, Q-ORT-2, Q-CLN-1, Q-EMP-1, Q-EXP-1, …); no alert or check encodes a decision on any of them.
+1. **OPS-1 (DEFERRED — locations only):** the Manager (the person) holds both backup recovery private keys (CONFIRMED); the exact physical / storage locations are decided at deployment / go-live and are **not invented here**. A recovery private key is never stored on the production VM. This does not block implementation; it must be settled before the first production backup.
+2. **OPS-2 (CONFIRMED):** no Owner-imposed hosting-region restriction; legal and provider compliance is verified at deployment time.
+3. **OPS-3 (TECHNICAL):** DigitalOcean / Frankfurt; sizing configurable and validated at deployment; no pricing claim.
+4. **OPS-4 (CONFIRMED):** RPO 5 min, RTO 4 h; verified by drill before go-live. Scenario C (provider lost) is outside those targets unless continuous off-site archiving is configured.
+5. **OPS-5 (CONFIRMED):** primary operator = project developer / system owner; backup alert contact = Clinic Manager.
+6. Retention numbers and monitoring vendors are defaults that may be vetoed.
 
-**Serious-issue check:** none. A restore can reactivate a deactivated employee or an old password, so the lockdown is mandatory; restore drills use real data, so they run in a throwaway production-grade environment and never in staging. No Inventory and no X-ray appear anywhere.
+**Observations (design review; no blocking inconsistency identified, implementation not proven):** A restore can reactivate a deactivated employee or an old password, so the lockdown is mandatory; restore drills use real data, so they run in a throwaway production-grade environment and never in staging. No Inventory and no X-ray appear anywhere.

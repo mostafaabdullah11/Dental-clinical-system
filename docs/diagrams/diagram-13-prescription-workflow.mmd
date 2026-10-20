@@ -4,5 +4,5 @@ flowchart TD
     IT --> ED["Editable while visit is not finalized"]
     ED --> FIN["Visit finalized: record protected"]
     FIN --> VW["All Doctors may view and print"]
-    FIN -.->|"correction after finalization: workflow OPEN Q-CLN-1, audited"| COR["No silent overwrite"]
+    FIN -.->|"Doctor corrects own record: controlled path, audited"| COR["Correction row, no silent overwrite"]
     VW --> PDF["Print or PDF from print model: no patient contact data"]

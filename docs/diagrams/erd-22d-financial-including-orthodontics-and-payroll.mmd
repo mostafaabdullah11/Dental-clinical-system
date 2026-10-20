@@ -1,21 +1,33 @@
 erDiagram
-    CASE_WORK_ITEMS |o--o| PATIENT_CHARGES : "one charge per work item"
+    CASE_WORK_ITEMS |o--o| PATIENT_CHARGES : "one charge per work item (consultation charge has none)"
     PATIENTS ||--o{ PATIENT_CHARGES : billed
     PATIENTS ||--o{ PAYMENTS : pays
-    PAYMENTS ||--o{ PAYMENT_ALLOCATIONS : split
+    PAYMENTS ||--o{ PAYMENT_ALLOCATIONS : "signed split"
+    PAYMENTS ||--o{ PATIENT_CREDIT_ENTRIES : "remainder"
+    PATIENTS ||--o{ PATIENT_CREDIT_ENTRIES : "credit ledger"
+    PAYMENTS ||--o{ PAYMENT_CORRECTIONS : "Manager-only"
     PATIENT_CHARGES ||--o{ PAYMENT_ALLOCATIONS : receives
-    PAYMENT_ALLOCATIONS |o--o| DOCTOR_EARNINGS : "unless held"
-    DOCTORS ||--o{ DOCTOR_EARNINGS : attributed
-    DOCTOR_EARNINGS |o--o| REVENUE_DISTRIBUTIONS : "completion, may be pending"
-    PATIENT_CHARGES ||--o{ ATTRIBUTION_HOLDS : "Q-FIN-9"
-    ATTRIBUTION_HOLDS ||--o{ PENDING_DOCTOR_ATTRIBUTIONS : covers
-    PAYMENT_ALLOCATIONS |o--o| PENDING_DOCTOR_ATTRIBUTIONS : "held allocation"
-    PATIENT_CHARGES ||--o{ CHARGE_ADJUSTMENTS : corrections
+    PAYMENTS |o--o{ DISTRIBUTION_EVENTS : "Collection, CreditApplication"
+    PAYMENT_CORRECTIONS |o--o{ DISTRIBUTION_EVENTS : "Correction"
+    FIXED_LAB_REVISIONS |o--o{ DISTRIBUTION_EVENTS : "FixedLabRevision (Manager revisions)"
+    DISTRIBUTION_EVENTS ||--o{ DOCTOR_ENTITLEMENTS : "event is the parent"
+    DISTRIBUTION_EVENTS ||--o{ DOCTOR_EARNINGS : "event is the parent"
+    DISTRIBUTION_EVENTS ||--o{ REVENUE_DISTRIBUTIONS : "event is the parent"
+    PAYMENT_ALLOCATIONS ||--o{ DOCTOR_ENTITLEMENTS : "0..N: initial row plus correction deltas; none for consultation"
+    PATIENT_CHARGES ||--o{ DOCTOR_ENTITLEMENTS : "0..N via the allocation (composite FK), never exactly one"
+    DOCTORS ||--o{ DOCTOR_ENTITLEMENTS : "entitled"
+    PAYMENT_ALLOCATIONS ||--o{ DOCTOR_EARNINGS : "recognizes, lagging for fixed lab"
+    DOCTORS ||--o{ DOCTOR_EARNINGS : earns
+    PAYMENT_ALLOCATIONS ||--o{ REVENUE_DISTRIBUTIONS : "lab and clinic, 1..N for treatment and ortho"
+    PATIENT_CHARGES ||--o{ REVENUE_DISTRIBUTIONS : "charge and case consistency (composite FK)"
+    PATIENT_CHARGES ||--o{ CHARGE_ADJUSTMENTS : "Manager corrections, ortho charges only OrthoTermsChange increase"
     TREATMENT_CASES |o--o| FIXED_LAB_EXPENSES : "one per fixed-lab case"
-    FIXED_LAB_EXPENSES ||--o{ FIXED_LAB_REVISIONS : history
-    ORTHO_CASES |o--o| PATIENT_CHARGES : "one charge, once terms exist"
-    ORTHO_CASES ||--o{ ORTHO_INSTALLMENTS : schedule
-    ORTHO_INSTALLMENTS ||--o{ INSTALLMENT_PAYMENTS : "unused until Q-ORT-2"
+    FIXED_LAB_EXPENSES ||--|{ FIXED_LAB_REVISIONS : "revision 1 Doctor, later Manager"
+    ORTHO_CASES |o--o| PATIENT_CHARGES : "one ortho charge, set at Visit finalization"
+    ORTHO_CASES ||--|{ ORTHO_TERM_REVISIONS : "revision 1 Doctor, later Manager"
+    ORTHO_CASES ||--o{ ORTHO_INSTALLMENTS : "schedule, generated once at finalization"
+    ORTHO_INSTALLMENTS ||--o{ ORTHO_INSTALLMENT_REVISIONS : "amount, due date and active revisions; never below paid, never deleted"
+    ORTHO_INSTALLMENTS ||--o{ INSTALLMENT_PAYMENTS : "manual application"
     PAYMENT_ALLOCATIONS ||--o{ INSTALLMENT_PAYMENTS : consumed
     DOCTORS ||--o{ DOCTOR_PAYROLLS : paid
     DOCTOR_PAYROLLS ||--o{ DOCTOR_PAYROLL_ITEMS : contains
@@ -23,10 +35,13 @@ erDiagram
     DOCTOR_PAYROLLS ||--o{ DOCTOR_PAYROLL_ADJUSTMENTS : has
     SALES_EMPLOYEES ||--o{ SALES_PAYROLLS : paid
     SALES_PAYROLLS ||--o{ SALES_PAYROLL_COMMISSION_ITEMS : contains
+    PAYMENT_ALLOCATIONS ||--o| SALES_PAYROLL_COMMISSION_ITEMS : "commissioned at most once; none for Walk-In or Direct"
+    SALES_COMMISSION_RATE_HISTORY ||--o{ SALES_PAYROLL_COMMISSION_ITEMS : "rate in force at collection time"
     SALES_PAYROLLS ||--o{ SALES_PAYROLL_ADJUSTMENTS : has
-    ASSISTANTS ||--o{ ASSISTANT_PAYROLLS : "paid; periods never overlap"
+    ASSISTANTS ||--o{ ASSISTANT_PAYROLLS : "paid monthly"
+    ASSISTANT_PAYROLLS ||--o{ ASSISTANT_PAYROLL_OVERTIME_ITEMS : "overtime items"
+    ASSISTANT_OVERTIME_ENTRIES ||--o| ASSISTANT_PAYROLL_OVERTIME_ITEMS : "in at most one payroll"
     EXPENSE_CATEGORIES ||--o{ CLINIC_EXPENSES : classifies
-    CLINIC_EXPENSES |o--o| CLINIC_EXPENSES : "adjusts"
     ASSISTANTS {
         uuid id PK
         text full_name
@@ -38,23 +53,100 @@ erDiagram
         date period_start
         date period_end
         numeric salary_snapshot
-        numeric final_amount
-        text status
+        numeric base_pay_amount
+        text partial_period_reason
+        numeric overtime_amount
+        numeric final_amount "base pay + overtime"
+        text status "Draft, Finalized, Paid"
+    }
+    ASSISTANT_PAYROLL_OVERTIME_ITEMS {
+        uuid id PK
+        numeric approved_hours
+        numeric hourly_rate_snapshot
+        numeric amount
     }
     PATIENT_CHARGES {
         uuid id PK
         numeric original_price
-        numeric discount_amount
-        numeric final_price
+        numeric discount_amount "set by Doctor, Sales or Manager before finalization"
+        numeric final_price "generated: original_price - discount_amount"
+        text discount_set_by_role
+    }
+    CHARGE_ADJUSTMENTS {
+        uuid id PK
+        numeric amount_delta "signed, Manager only"
+        text adjustment_kind "DiscountCorrection or PriceCorrection for non-ortho charges, OrthoTermsChange for ortho charges only"
+    }
+    DISTRIBUTION_EVENTS {
+        uuid id PK
+        text event_kind "Collection, CreditApplication, Correction, FixedLabRevision"
+        numeric basis_amount
+    }
+    DOCTOR_ENTITLEMENTS {
+        uuid id PK
+        numeric amount "signed entitled delta"
+        numeric doctor_percentage_applied
     }
     DOCTOR_EARNINGS {
         uuid id PK
-        numeric allocated_amount
-        numeric doctor_share
+        numeric amount
+        timestamptz recognized_at
     }
     REVENUE_DISTRIBUTIONS {
         uuid id PK
-        numeric doctor_share
+        uuid charge_id
         numeric lab_amount
         numeric clinic_share
+    }
+    FIXED_LAB_REVISIONS {
+        uuid id PK
+        int revision_number
+        numeric amount
+        text entered_by_role "DOCTOR for revision 1, MANAGER later"
+    }
+    ORTHO_TERM_REVISIONS {
+        uuid id PK
+        int revision_number
+        numeric gross_total_price "Doctor Gross Total, never decreased in V1"
+        text entered_by_role "DOCTOR for revision 1, MANAGER later"
+    }
+    ORTHO_INSTALLMENTS {
+        uuid id PK
+        int installment_number
+        text origin "Generated, ManagerAdded or PriceChange"
+    }
+    ORTHO_INSTALLMENT_REVISIONS {
+        uuid id PK
+        int revision_number
+        numeric amount_due
+        date due_date
+        boolean is_active "false = retired, only when unpaid"
+        text source "Generated, ManagerAdded, PriceChange, ManagerEdit, ManagerRetire"
+    }
+    SALES_PAYROLL_COMMISSION_ITEMS {
+        uuid id PK
+        uuid payment_allocation_id "unique"
+        uuid rate_revision_id
+        numeric base_amount
+        numeric commission_percentage_applied "snapshot at collection time"
+        numeric commission_amount
+    }
+    SALES_COMMISSION_RATE_HISTORY {
+        uuid id PK
+        int revision_number
+        numeric commission_percentage
+        timestamptz effective_from
+    }
+    CLINIC_EXPENSES {
+        uuid id PK
+        numeric amount
+        uuid created_by_user_id "never overwritten"
+        text created_by_role "MANAGER or SALES_RECEPTION"
+        timestamptz created_at
+        uuid updated_by_user_id
+        timestamptz updated_at
+    }
+    EXPENSE_CATEGORIES {
+        uuid id PK
+        bool sales_can_record "Materials and Petty only"
     }

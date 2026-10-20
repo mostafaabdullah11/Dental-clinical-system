@@ -1,8 +1,9 @@
 flowchart TD
-    DE["Doctor Earnings from collections, including fixed-lab cases"] --> SEL["Manager drafts payroll for Doctor and period"]
-    SEL --> IT["Items: earnings not in any payroll"]
+    DE["Doctor Earnings recognized in the month (general lab immediately, fixed lab after Lab-First)"] --> SEL["Manager drafts payroll for Doctor and calendar month"]
+    SEL --> IT["Items: earnings of that month not in any payroll"]
     IT --> ADJ["Adjustments"]
-    ADJ --> FINAL["Finalize: payout columns sealed"]
+    ADJ --> FINAL["Finalize after month end: payout columns sealed (G2)"]
     FINAL --> PAID["Mark paid, paid date recorded"]
-    PEND["Pending Doctor Attribution, Q-FIN-9"] -.->|"not included"| IT
+    PEN["Pending fixed-lab entitlement"] -.->|"not included until recognized"| IT
+    COR["Correction or lab revision after finalize"] -.->|"delta rows go to the current open month"| IT
     CHG["Later rate change"] -.->|"never recalculates"| FINAL

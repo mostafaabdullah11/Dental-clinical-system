@@ -3,7 +3,7 @@ stateDiagram-v2
     Scheduled --> Confirmed
     Scheduled --> InTreatment: Doctor starts the linked visit
     Confirmed --> InTreatment: Doctor starts the linked visit
-    InTreatment --> Completed: visit finalized
+    InTreatment --> Completed: visit finalized, unused booked time released
     Scheduled --> Cancelled
     Confirmed --> Cancelled
     Scheduled --> NoShow
@@ -14,3 +14,9 @@ stateDiagram-v2
     Cancelled --> [*]
     NoShow --> [*]
     Rescheduled --> [*]
+    note right of Scheduled
+        Sales records arrival (event, not a status);
+        the Doctor queue is derived; starting the visit
+        moves Scheduled or Confirmed to InTreatment;
+        Sales and Manager may Confirm, Cancel, mark NoShow
+    end note

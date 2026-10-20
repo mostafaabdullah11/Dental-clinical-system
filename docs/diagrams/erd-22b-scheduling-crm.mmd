@@ -1,6 +1,7 @@
 erDiagram
     PATIENTS ||--|| PATIENT_CONTACTS : "1 to 1"
-    SALES_EMPLOYEES |o--o{ PATIENT_CONTACTS : "original owner, nullable"
+    PATIENTS ||--o| PATIENT_MEDICAL_HISTORIES : "0..1 intake"
+    SALES_EMPLOYEES |o--o{ PATIENT_CONTACTS : "original sales employee, only when patient_source is Lead (WalkIn / Direct has none)"
     PATIENTS ||--o{ PATIENT_DOCTOR_ASSIGNMENTS : history
     DOCTORS ||--o{ PATIENT_DOCTOR_ASSIGNMENTS : "current or previous"
     DOCTORS ||--o{ AVAILABILITY_WEEKS : has
@@ -8,12 +9,52 @@ erDiagram
     PATIENTS ||--o{ APPOINTMENTS : has
     DOCTORS ||--o{ APPOINTMENTS : attends
     APPOINTMENTS |o--o| APPOINTMENTS : "previous_appointment"
+    APPOINTMENTS ||--o{ APPOINTMENT_ARRIVALS : "arrival events, Sales only"
     SALES_EMPLOYEES ||--o{ LEADS : "original owner"
+    SALES_EMPLOYEES |o--o{ LEADS : "responsible owner (NULL = unassigned)"
+    LEADS ||--o{ RESPONSIBILITY_HISTORY : "reassignment history"
     LEADS |o--o| PATIENTS : "converted to"
     PATIENTS ||--o{ REFERRALS : has
     DOCTORS ||--o{ REFERRALS : creates
     PATIENTS |o--o{ FOLLOW_UPS : about
-    SALES_EMPLOYEES ||--o{ FOLLOW_UPS : assigned
+    SALES_EMPLOYEES |o--o{ FOLLOW_UPS : "assigned (NULL = unassigned)"
     FOLLOW_UPS ||--o{ FOLLOW_UP_CONTACT_ATTEMPTS : "append only"
     PATIENTS |o--o{ NOTIFICATIONS : "related, optional"
     PATIENTS ||--o{ FEEDBACK_REQUESTS : has
+    VISITS ||--o| FEEDBACK_REQUESTS : "created in the finalize transaction"
+    FEEDBACK_REQUESTS |o--o| FEEDBACK_ENTRIES : "at most one result per request, either source; Sales-entered Visit feedback links the request"
+    PATIENTS ||--o{ FEEDBACK_ENTRIES : "about a Doctor"
+    DOCTORS ||--o{ FEEDBACK_ENTRIES : receives
+    REFERRALS {
+        uuid id PK
+        text reason "visible to Sales"
+        text notes "Doctor and Manager only"
+    }
+    FEEDBACK_REQUESTS {
+        uuid id PK
+        uuid visit_id "unique"
+        timestamptz link_sent_at "state derived: Pending, Sent, Submitted"
+    }
+    FEEDBACK_ENTRIES {
+        uuid id PK
+        text source "PatientWeb or SalesEntered"
+        uuid visit_id "NULL = general feedback"
+        uuid feedback_request_id "NULL = general feedback; unique"
+        smallint rating
+        uuid recorded_by_user_id "SalesEntered only"
+    }
+    APPOINTMENTS {
+        uuid id PK
+        timestamptz start_at
+        int duration_minutes
+        text status
+        timestamptz visit_ended_at
+    }
+    FOLLOW_UPS {
+        uuid id PK
+        text status "New, Contacted, NoResponse, FollowedUp"
+    }
+    PATIENT_CONTACTS {
+        uuid patient_id PK
+        text patient_source "WalkIn (includes Direct) or Lead"
+    }

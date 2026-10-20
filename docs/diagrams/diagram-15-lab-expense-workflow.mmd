@@ -1,11 +1,17 @@
 flowchart TD
     W["Work type"] --> T{"Lab model"}
     T -->|"General work"| G["Manager sets general lab percentage"]
-    G --> G2["Lab = collected x lab percent, taken from the total"]
-    G2 --> G3["Rate selection for running cases: W2 OPEN"]
-    T -->|"Implant, Fixed or Removable Prosthetics"| F["Doctor enters initial fixed lab, one per case"]
-    F --> F2["Manager edits: new revision, audited"]
-    F2 --> F3["Allocation across payments, charges, Doctors: Q-FIN-1 OPEN"]
-    F2 --> F4["Effect on earlier completions: Q-FIN-6 OPEN"]
-    G2 --> DS["Doctor Share is never reduced by lab"]
-    F3 --> DS
+    G --> G2["On each allocation: Lab = allocated x rate at allocation time, immediate"]
+    G2 --> G4["Doctor share and Clinic share recognized immediately"]
+    T -->|"Implant, Fixed or Removable Prosthetics"| F["Doctor sets the price and enters the INITIAL fixed lab amount, revision 1, one per case; required before the first Fixed-lab charge; unknown is never zero"]
+    F --> F2["Manager only revises an existing amount: new revision with reason, audited"]
+    F --> PAYM["Payment allocated to the charge"]
+    PAYM --> S1["1. Lab funding priority: recover Lab up to the fixed amount"]
+    S1 --> S2["2. Doctor entitlement accrues (net charge x snapshot %); recognized via FIFO queue as funds allow"]
+    S2 --> PEND{"Entitlement fully funded?"}
+    PEND -->|"no"| S2P["Pending Doctor entitlement carries forward"]
+    S2P -->|"later collection"| S2
+    PEND -->|"yes"| S2S["Doctor settlement recognized in the month of collection"]
+    S2S --> S3["3. Clinic remainder (never negative)"]
+    F2 --> RC["Reconcile: emits only delta rows (idempotent); entitlement unchanged"]
+    RC --> S1

@@ -1,9 +1,11 @@
 flowchart TD
     BS["Base salary snapshot"] --> NET
-    CP["Commission percentage snapshot"] --> CM["Commission on patients the employee originally brought"]
-    CM --> BASE["Calculation base: Q-FIN-2 OPEN, no implementation yet"]
-    BASE --> NET["Net = Base + Commission + Bonus - Deductions"]
+    CP["Commission rate history: rate in force at each collection, snapshotted on each item; a Manager change applies to future collections only"] --> CM["Individual commission item per net allocation (collected money after discount) of Lead-sourced patients, allocated before deactivation"]
+    WI["Walk-In / Direct patient: no Original Sales Employee"] --> ZERO["Zero Sales commission, no pool"]
+    CM --> NET["Net = Base + Commission + Bonus - Deductions"]
     BO["Bonus"] --> NET
     DE["Deductions"] --> NET
-    NET --> FIN["Finalize: disabled behind a flag until Q-FIN-2"]
+    AT["Sales attendance (Manager-maintained)"] -.->|"deducts nothing by itself"| NET
+    NET --> FIN["Finalize after month end"]
     FIN --> VIEW["Employee sees only own payroll, Manager sees all"]
+    INA["Inactive Sales: no new commission after deactivation"] -.-> CM

@@ -3,23 +3,61 @@ erDiagram
     ROLES ||--o{ USER_ROLES : has
     ROLES ||--o{ ROLE_PERMISSIONS : grants
     PERMISSIONS ||--o{ ROLE_PERMISSIONS : in
-    USERS |o--o| DOCTORS : "staff link"
-    USERS |o--o| SALES_EMPLOYEES : "staff link"
+    USERS ||--o| DOCTORS : "staff link (doctors.user_id NOT NULL, unique)"
+    USERS ||--o| SALES_EMPLOYEES : "staff link (sales_employees.user_id NOT NULL, unique)"
+    SALES_EMPLOYEES ||--|{ SALES_COMMISSION_RATE_HISTORY : "revision 1 at creation; current = latest; future collections only"
+    USERS ||--o{ SALES_COMMISSION_RATE_HISTORY : "set by Manager"
+    ASSISTANTS ||--o{ ATTENDANCE_RECORDS : "Manager-maintained"
+    SALES_EMPLOYEES ||--o{ ATTENDANCE_RECORDS : "Manager-maintained"
+    ASSISTANTS ||--o{ ASSISTANT_OVERTIME_ENTRIES : "void-only entries"
+    ATTENDANCE_RECORDS |o--o| ASSISTANT_OVERTIME_ENTRIES : "optional link, same Assistant and date (composite FK on declared UNIQUE)"
+    USERS ||--o{ ATTENDANCE_RECORDS : "recorded by Manager"
     USERS |o--o{ AUDIT_LOG : acts
     USERS {
         uuid id PK
         string user_name
+        string password_hash
         bool is_active
     }
     DOCTORS {
         uuid id PK
+        uuid user_id
         numeric current_percentage
         bool is_active
     }
     SALES_EMPLOYEES {
         uuid id PK
-        numeric commission_percentage
+        uuid user_id
+        timestamptz deactivated_at
         bool is_active
+    }
+    SALES_COMMISSION_RATE_HISTORY {
+        uuid id PK
+        int revision_number
+        numeric commission_percentage "rate, history only, insert-only"
+        timestamptz effective_from
+    }
+    ASSISTANTS {
+        uuid id PK
+        numeric current_salary
+        numeric overtime_hourly_rate
+        bool is_active
+    }
+    ATTENDANCE_RECORDS {
+        uuid id PK
+        date attendance_date
+        text status "Present, Late, Absent"
+        time check_in_time
+        time check_out_time
+    }
+    ASSISTANT_OVERTIME_ENTRIES {
+        uuid id PK
+        date work_date
+        uuid attendance_record_id "nullable"
+        numeric approved_hours
+        numeric hourly_rate_snapshot
+        numeric amount
+        timestamptz voided_at
     }
     AUDIT_LOG {
         bigint id PK

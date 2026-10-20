@@ -1,16 +1,18 @@
 flowchart TB
     NET["Internet"] -->|"443 HTTPS, 80 redirect"| WEB
-    subgraph VM["Linux VM (Docker)"]
+    subgraph VM["DigitalOcean Droplet, Frankfurt, about 2 vCPU / 4 GB, configurable (Docker)"]
         WEB["web: Caddy + SPA"] --> API["api"]
         WRK["worker: Hangfire (dashboard on localhost only)"]
         MIG["migrator (deploy time only)"]
         BKP["backup (nightly one-shot)"]
     end
-    API -->|"TLS verify-full"| PG[("Managed PostgreSQL + point-in-time recovery")]
+    API -->|"TLS verify-full"| PG[("DigitalOcean Managed PostgreSQL, Frankfurt, point-in-time recovery")]
     WRK --> PG
     MIG --> PG
     BKP --> PG
-    BKP -->|"encrypted, write-only"| OFF["Off-site object-locked storage, different account"]
+    BKP -->|"age-encrypted, write-only"| OFF["Off-site object-locked storage, different account"]
+    KEYS["Recovery keys held by the Clinic Manager as a person (storage locations OPS-1 DEFERRED)"] -.->|"decrypt on restore"| OFF
     MON["External uptime and heartbeat monitor"] -.-> WEB
     VM -.->|"heartbeats, scrubbed errors"| MON
     GH["GitHub Actions"] -->|"forced-command SSH"| VM
+    RST["Restore: post-restore-lockdown locks non-Manager accounts, Manager sets passwords"] -.-> PG
