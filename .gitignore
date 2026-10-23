@@ -1,0 +1,25 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.binlog
+
+# Node / web
+node_modules/
+src/web/dist/
+*.tsbuildinfo
+
+# Local environment and secrets (never commit real values)
+.env
+.env.*
+!.env.example
+deploy/secrets/
+*.pfx
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json

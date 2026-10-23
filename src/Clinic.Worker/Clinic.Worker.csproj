@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <AssemblyName>Clinic.Worker</AssemblyName>
+    <RootNamespace>Clinic.Worker</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clinic.Persistence\Clinic.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

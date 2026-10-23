@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\Clinic.Modules.Audit\Clinic.Modules.Audit.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Configuration\Clinic.Modules.Configuration.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Crm\Clinic.Modules.Crm.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Identity\Clinic.Modules.Identity.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Notifications\Clinic.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Patients\Clinic.Modules.Patients.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Staff\Clinic.Modules.Staff.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations\Sql\*.sql" />
+  </ItemGroup>
+
+</Project>
