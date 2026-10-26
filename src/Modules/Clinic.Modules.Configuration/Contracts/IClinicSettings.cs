@@ -13,9 +13,14 @@ public interface IClinicSettings
     /// <summary>Whether Doctors see the patient's date of birth (setting doctor_dob_visible; default visible).</summary>
     Task<bool> GetDoctorDobVisibleAsync(CancellationToken cancellationToken);
 
+    /// <summary>The clinic's own name and contact line (printed prescriptions; never patient data).</summary>
+    Task<ClinicProfile> GetClinicProfileAsync(CancellationToken cancellationToken);
+
     /// <summary>Today's calendar date in the clinic timezone (FR-OPS-003).</summary>
     Task<DateOnly> GetClinicTodayAsync(DateTimeOffset utcNow, CancellationToken cancellationToken);
 }
+
+public sealed record ClinicProfile(string Name, string Contact);
 
 public static class ClinicTimeZones
 {

@@ -105,6 +105,648 @@ namespace Clinic.Persistence.Migrations
                     b.ToTable("audit_log", "audit");
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.CaseWorkItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("DoctorPercentageSnapshot")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("doctor_percentage_snapshot");
+
+                    b.Property<decimal>("EnteredPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("entered_price");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid>("PerformingDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("performing_doctor_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.Property<Guid>("TreatmentRecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_record_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_case_work_items");
+
+                    b.HasAlternateKey("Id", "TreatmentCaseId", "PerformingDoctorId")
+                        .HasName("ak_case_work_items_id_case_doctor");
+
+                    b.HasIndex("TreatmentCaseId")
+                        .HasDatabaseName("ix_case_work_items_treatment_case_id");
+
+                    b.HasIndex("TreatmentRecordId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_case_work_items_treatment_record_id");
+
+                    b.HasIndex("PerformingDoctorId", "CreatedAt")
+                        .HasDatabaseName("ix_case_work_items_performing_doctor_id_created_at");
+
+                    b.HasIndex("TreatmentCaseId", "PatientId")
+                        .HasDatabaseName("ix_case_work_items_treatment_case_id_patient_id");
+
+                    b.HasIndex("TreatmentRecordId", "PerformingDoctorId")
+                        .HasDatabaseName("ix_case_work_items_treatment_record_id_performing_doctor_id");
+
+                    b.HasIndex("TreatmentRecordId", "TreatmentCaseId", "PatientId")
+                        .HasDatabaseName("ix_case_work_items_treatment_record_id_treatment_case_id_patie");
+
+                    b.ToTable("case_work_items", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_case_work_items_percentage", "doctor_percentage_snapshot BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("ck_case_work_items_price", "entered_price > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.ImplantDetails", b =>
+                {
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.Property<bool>("HasBoneGraft")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_bone_graft");
+
+                    b.Property<bool>("HasMembrane")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_membrane");
+
+                    b.Property<short>("HealingMonths")
+                        .HasColumnType("smallint")
+                        .HasColumnName("healing_months");
+
+                    b.Property<DateOnly?>("ProcedureDate")
+                        .HasColumnType("date")
+                        .HasColumnName("procedure_date");
+
+                    b.HasKey("TreatmentCaseId")
+                        .HasName("pk_implant_details");
+
+                    b.ToTable("implant_details", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_implant_details_healing", "healing_months BETWEEN 1 AND 6");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.PricingDiscountEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("CaseWorkItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("case_work_item_id");
+
+                    b.Property<Guid?>("ConsultationVisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("consultation_visit_id");
+
+                    b.Property<int>("EntrySeq")
+                        .HasColumnType("integer")
+                        .HasColumnName("entry_seq");
+
+                    b.Property<string>("PricingLineKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("pricing_line_kind");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("SetAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("set_at");
+
+                    b.Property<string>("SetByRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("set_by_role");
+
+                    b.Property<Guid>("SetByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("set_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pricing_discount_entries");
+
+                    b.HasIndex("SetByUserId")
+                        .HasDatabaseName("ix_pricing_discount_entries_set_by_user_id");
+
+                    b.HasIndex("CaseWorkItemId", "EntrySeq")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pricing_discount_entries_work_item_seq")
+                        .HasFilter("case_work_item_id IS NOT NULL");
+
+                    b.HasIndex("ConsultationVisitId", "EntrySeq")
+                        .IsUnique()
+                        .HasDatabaseName("ix_pricing_discount_entries_consultation_seq")
+                        .HasFilter("consultation_visit_id IS NOT NULL");
+
+                    b.ToTable("pricing_discount_entries", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_pricing_discount_entries_amount", "amount >= 0");
+
+                            t.HasCheckConstraint("ck_pricing_discount_entries_line", "(pricing_line_kind = 'WorkItem' AND case_work_item_id IS NOT NULL AND consultation_visit_id IS NULL) OR (pricing_line_kind = 'Consultation' AND consultation_visit_id IS NOT NULL AND case_work_item_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_pricing_discount_entries_role", "set_by_role IN ('DOCTOR', 'SALES_RECEPTION', 'MANAGER')");
+
+                            t.HasCheckConstraint("ck_pricing_discount_entries_seq", "entry_seq >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.ProcedureType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("LabModel")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("lab_model");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("OptionDefinition")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("option_definition");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id")
+                        .HasName("pk_procedure_types");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_procedure_types_code");
+
+                    b.ToTable("procedure_types", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_procedure_types_lab_model", "lab_model IN ('General', 'Fixed')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.RootCanalMeasurement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<short>("CanalNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("canal_number");
+
+                    b.Property<decimal>("LengthMm")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("length_mm");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid>("RecordedByDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_doctor_id");
+
+                    b.Property<Guid>("RecordedInVisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_in_visit_id");
+
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_root_canal_measurements");
+
+                    b.HasIndex("RecordedByDoctorId")
+                        .HasDatabaseName("ix_root_canal_measurements_recorded_by_doctor_id");
+
+                    b.HasIndex("RecordedInVisitId")
+                        .HasDatabaseName("ix_root_canal_measurements_recorded_in_visit_id");
+
+                    b.HasIndex("TreatmentCaseId", "CanalNumber", "RecordedInVisitId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_root_canal_measurements_treatment_case_id_canal_number_reco");
+
+                    b.ToTable("root_canal_measurements", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_root_canal_measurements_canal", "canal_number BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_root_canal_measurements_length", "length_mm > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.TreatmentCase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Area")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("area");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("details");
+
+                    b.Property<string>("LabModelSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("lab_model_snapshot");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid>("ProcedureTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("procedure_type_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<Guid>("StartedByDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("started_by_doctor_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.PrimitiveCollection<string[]>("Teeth")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("teeth");
+
+                    b.HasKey("Id")
+                        .HasName("pk_treatment_cases");
+
+                    b.HasAlternateKey("Id", "PatientId")
+                        .HasName("ak_treatment_cases_id_patient_id");
+
+                    b.HasIndex("PatientId")
+                        .HasDatabaseName("ix_treatment_cases_patient_id");
+
+                    b.HasIndex("ProcedureTypeId")
+                        .HasDatabaseName("ix_treatment_cases_procedure_type_id");
+
+                    b.HasIndex("StartedByDoctorId", "Status")
+                        .HasDatabaseName("ix_treatment_cases_started_by_doctor_id_status");
+
+                    b.ToTable("treatment_cases", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_treatment_cases_status", "status IN ('Planned', 'Active', 'Completed', 'Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.TreatmentRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.Property<Guid>("VisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("visit_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_treatment_records");
+
+                    b.HasAlternateKey("Id", "DoctorId")
+                        .HasName("ak_treatment_records_id_doctor_id");
+
+                    b.HasAlternateKey("Id", "TreatmentCaseId", "PatientId")
+                        .HasName("ak_treatment_records_id_case_patient");
+
+                    b.HasIndex("DoctorId")
+                        .HasDatabaseName("ix_treatment_records_doctor_id");
+
+                    b.HasIndex("TreatmentCaseId")
+                        .HasDatabaseName("ix_treatment_records_treatment_case_id");
+
+                    b.HasIndex("TreatmentCaseId", "PatientId")
+                        .HasDatabaseName("ix_treatment_records_treatment_case_id_patient_id");
+
+                    b.HasIndex("VisitId", "DoctorId")
+                        .HasDatabaseName("ix_treatment_records_visit_id_doctor_id");
+
+                    b.HasIndex("VisitId", "PatientId")
+                        .HasDatabaseName("ix_treatment_records_visit_id_patient_id");
+
+                    b.HasIndex("VisitId", "TreatmentCaseId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_treatment_records_visit_id_treatment_case_id");
+
+                    b.ToTable("treatment_records", "clinical");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.TreatmentStep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid?>("CompletedByDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by_doctor_id");
+
+                    b.Property<Guid?>("CompletedInVisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_in_visit_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StepCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("step_code");
+
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_treatment_steps");
+
+                    b.HasIndex("CompletedByDoctorId")
+                        .HasDatabaseName("ix_treatment_steps_completed_by_doctor_id");
+
+                    b.HasIndex("CompletedInVisitId")
+                        .HasDatabaseName("ix_treatment_steps_completed_in_visit_id");
+
+                    b.HasIndex("TreatmentCaseId", "StepCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_treatment_steps_treatment_case_id_step_code");
+
+                    b.ToTable("treatment_steps", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_treatment_steps_code", "step_code IN ('AccessCavity', 'MechanicalPreparation', 'Obturation', 'PostAndCore')");
+
+                            t.HasCheckConstraint("ck_treatment_steps_completion", "(status = 'Completed') = (completed_at IS NOT NULL AND completed_in_visit_id IS NOT NULL AND completed_by_doctor_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_treatment_steps_status", "status IN ('Pending', 'Completed')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.Visit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AppointmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("appointment_id");
+
+                    b.Property<string>("ClinicalNotes")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)")
+                        .HasColumnName("clinical_notes");
+
+                    b.Property<decimal?>("ConsultationFee")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("consultation_fee");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<DateTimeOffset?>("FinalizedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finalized_at");
+
+                    b.Property<Guid?>("FinalizedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("finalized_by_user_id");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_visits");
+
+                    b.HasAlternateKey("Id", "DoctorId")
+                        .HasName("ak_visits_id_doctor_id");
+
+                    b.HasAlternateKey("Id", "PatientId")
+                        .HasName("ak_visits_id_patient_id");
+
+                    b.HasAlternateKey("Id", "PatientId", "DoctorId")
+                        .HasName("ak_visits_id_patient_id_doctor_id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_visits_appointment_id")
+                        .HasFilter("appointment_id IS NOT NULL");
+
+                    b.HasIndex("FinalizedByUserId")
+                        .HasDatabaseName("ix_visits_finalized_by_user_id");
+
+                    b.HasIndex("DoctorId", "StartedAt")
+                        .HasDatabaseName("ix_visits_doctor_id_started_at");
+
+                    b.HasIndex("PatientId", "StartedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_visits_patient_id_started_at");
+
+                    b.ToTable("visits", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_visits_consultation_fee", "consultation_fee IS NULL OR consultation_fee >= 0");
+
+                            t.HasCheckConstraint("ck_visits_finalized", "(status = 'Finalized') = (finalized_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_visits_status", "status IN ('Draft', 'InProgress', 'Finalized')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.VisitCorrection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<string[]>("ChangedFields")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("changed_fields");
+
+                    b.Property<DateTimeOffset>("CorrectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("corrected_at");
+
+                    b.Property<Guid>("CorrectingDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correcting_doctor_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("RecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("record_id");
+
+                    b.Property<string>("RecordType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("record_type");
+
+                    b.Property<long>("Txid")
+                        .HasColumnType("bigint")
+                        .HasColumnName("txid");
+
+                    b.Property<Guid>("VisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("visit_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_visit_corrections");
+
+                    b.HasIndex("CorrectingDoctorId")
+                        .HasDatabaseName("ix_visit_corrections_correcting_doctor_id");
+
+                    b.HasIndex("VisitId", "CorrectedAt")
+                        .HasDatabaseName("ix_visit_corrections_visit_id_corrected_at");
+
+                    b.HasIndex("VisitId", "CorrectingDoctorId")
+                        .HasDatabaseName("ix_visit_corrections_visit_id_correcting_doctor_id");
+
+                    b.ToTable("visit_corrections", "clinical", t =>
+                        {
+                            t.HasCheckConstraint("ck_visit_corrections_record_type", "record_type IN ('TreatmentRecord', 'TreatmentStep', 'RootCanalMeasurement', 'Prescription', 'PrescriptionItem', 'VisitNotes')");
+                        });
+                });
+
             modelBuilder.Entity("Clinic.Modules.Configuration.Domain.Setting", b =>
                 {
                     b.Property<string>("Key")
@@ -232,6 +874,9 @@ namespace Clinic.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_follow_ups");
 
+                    b.HasIndex("AppointmentId")
+                        .HasDatabaseName("ix_follow_ups_appointment_id");
+
                     b.HasIndex("CreatedByUserId")
                         .HasDatabaseName("ix_follow_ups_created_by_user_id");
 
@@ -243,6 +888,9 @@ namespace Clinic.Persistence.Migrations
 
                     b.HasIndex("PatientId")
                         .HasDatabaseName("ix_follow_ups_patient_id");
+
+                    b.HasIndex("ReferralId")
+                        .HasDatabaseName("ix_follow_ups_referral_id");
 
                     b.HasIndex("AssignedSalesEmployeeId", "DueDate")
                         .HasDatabaseName("ix_follow_ups_open_assigned_due")
@@ -424,6 +1072,86 @@ namespace Clinic.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Crm.Domain.Referral", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("FollowUpInstructions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("follow_up_instructions");
+
+                    b.Property<string>("FollowUpStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("follow_up_status");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("ReferralType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("referral_type");
+
+                    b.Property<Guid>("ReferringDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("referring_doctor_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_referrals");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_referrals_created_by_user_id");
+
+                    b.HasIndex("PatientId")
+                        .HasDatabaseName("ix_referrals_patient_id");
+
+                    b.HasIndex("ReferringDoctorId")
+                        .HasDatabaseName("ix_referrals_referring_doctor_id");
+
+                    b.HasIndex("FollowUpStatus", "CreatedAt")
+                        .HasDatabaseName("ix_referrals_follow_up_status_created_at");
+
+                    b.ToTable("referrals", "crm", t =>
+                        {
+                            t.HasCheckConstraint("ck_referrals_status", "follow_up_status IN ('New', 'Contacted', 'Booked', 'Completed', 'Lost')");
+
+                            t.HasCheckConstraint("ck_referrals_type", "referral_type IN ('Surgery', 'Implant', 'Orthodontics', 'Prosthetics', 'Other')");
+                        });
+                });
+
             modelBuilder.Entity("Clinic.Modules.Crm.Domain.ResponsibilityHistoryEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -490,6 +1218,262 @@ namespace Clinic.Persistence.Migrations
                             t.HasCheckConstraint("ck_responsibility_history_entity_type", "entity_type IN ('Lead', 'FollowUp')");
 
                             t.HasCheckConstraint("ck_responsibility_history_reason", "reason IN ('SalesDeactivated', 'ManagerReassigned', 'ManagerAssignedUnassigned')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Feedback.Domain.FeedbackEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("comment");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<Guid?>("FeedbackRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("feedback_request_id");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<short>("Rating")
+                        .HasColumnType("smallint")
+                        .HasColumnName("rating");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid?>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("source");
+
+                    b.Property<Guid?>("VisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("visit_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feedback_entries");
+
+                    b.HasIndex("FeedbackRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_feedback_entries_feedback_request_id");
+
+                    b.HasIndex("PatientId")
+                        .HasDatabaseName("ix_feedback_entries_patient_id");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_feedback_entries_recorded_by_user_id");
+
+                    b.HasIndex("DoctorId", "RecordedAt")
+                        .HasDatabaseName("ix_feedback_entries_doctor_id_recorded_at");
+
+                    b.HasIndex("FeedbackRequestId", "VisitId", "PatientId", "DoctorId")
+                        .HasDatabaseName("ix_feedback_entries_feedback_request_id_visit_id_patient_id_do");
+
+                    b.ToTable("feedback_entries", "feedback", t =>
+                        {
+                            t.HasCheckConstraint("ck_feedback_entries_rating", "rating BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_feedback_entries_source", "source IN ('PatientWeb', 'SalesEntered')");
+
+                            t.HasCheckConstraint("ck_feedback_entries_source_shape", "(source = 'PatientWeb' AND feedback_request_id IS NOT NULL AND recorded_by_user_id IS NULL) OR (source = 'SalesEntered' AND recorded_by_user_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_feedback_entries_visit_request", "(visit_id IS NULL) = (feedback_request_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Feedback.Domain.FeedbackRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DeliveryChannel")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("delivery_channel");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<DateTimeOffset?>("LinkSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("link_sent_at");
+
+                    b.Property<string>("LinkTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("link_token_hash");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid?>("SentByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sent_by_user_id");
+
+                    b.Property<Guid>("VisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("visit_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feedback_requests");
+
+                    b.HasAlternateKey("Id", "VisitId", "PatientId", "DoctorId")
+                        .HasName("ak_feedback_requests_id_visit_patient_doctor");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_feedback_requests_created_at");
+
+                    b.HasIndex("LinkTokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_feedback_requests_link_token_hash");
+
+                    b.HasIndex("SentByUserId")
+                        .HasDatabaseName("ix_feedback_requests_sent_by_user_id");
+
+                    b.HasIndex("VisitId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_feedback_requests_visit_id");
+
+                    b.HasIndex("VisitId", "PatientId", "DoctorId")
+                        .HasDatabaseName("ix_feedback_requests_visit_id_patient_id_doctor_id");
+
+                    b.ToTable("feedback_requests", "feedback");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.FixedLabExpense", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EnteredByDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entered_by_doctor_id");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fixed_lab_expenses");
+
+                    b.HasAlternateKey("Id", "TreatmentCaseId")
+                        .HasName("ak_fixed_lab_expenses_id_case");
+
+                    b.HasIndex("EnteredByDoctorId")
+                        .HasDatabaseName("ix_fixed_lab_expenses_entered_by_doctor_id");
+
+                    b.HasIndex("TreatmentCaseId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_fixed_lab_expenses_treatment_case_id");
+
+                    b.HasIndex("TreatmentCaseId", "PatientId")
+                        .HasDatabaseName("ix_fixed_lab_expenses_treatment_case_id_patient_id");
+
+                    b.ToTable("fixed_lab_expenses", "finance");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.FixedLabRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("EnteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("entered_at");
+
+                    b.Property<string>("EnteredByRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("entered_by_role");
+
+                    b.Property<Guid>("EnteredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entered_by_user_id");
+
+                    b.Property<Guid>("FixedLabExpenseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fixed_lab_expense_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision_number");
+
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fixed_lab_revisions");
+
+                    b.HasIndex("EnteredByUserId")
+                        .HasDatabaseName("ix_fixed_lab_revisions_entered_by_user_id");
+
+                    b.HasIndex("FixedLabExpenseId", "RevisionNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_fixed_lab_revisions_fixed_lab_expense_id_revision_number");
+
+                    b.HasIndex("FixedLabExpenseId", "TreatmentCaseId")
+                        .HasDatabaseName("ix_fixed_lab_revisions_fixed_lab_expense_id_treatment_case_id");
+
+                    b.ToTable("fixed_lab_revisions", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_fixed_lab_revisions_amount", "amount >= 0");
+
+                            t.HasCheckConstraint("ck_fixed_lab_revisions_role", "(revision_number = 1 AND entered_by_role = 'DOCTOR') OR (revision_number > 1 AND entered_by_role = 'MANAGER')");
                         });
                 });
 
@@ -739,6 +1723,109 @@ namespace Clinic.Persistence.Migrations
                             t.HasCheckConstraint("ck_notifications_status", "status IN ('Pending', 'Sent', 'Failed', 'Cancelled')");
 
                             t.HasCheckConstraint("ck_notifications_type", "notification_type IN ('AppointmentTomorrow', 'ImplantFollowUpTomorrow', 'OrthodonticInstallmentDueTomorrow', 'NewDoctorReferral', 'OutstandingPaymentFollowUp', 'PendingFollowUp', 'FeedbackRequestPending')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.OrthoCase", b =>
+                {
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.Property<string>("ApplianceType")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("appliance_type");
+
+                    b.Property<string>("Area")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("area");
+
+                    b.Property<Guid?>("ChargeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("charge_id");
+
+                    b.HasKey("TreatmentCaseId")
+                        .HasName("pk_ortho_cases");
+
+                    b.HasIndex("ChargeId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ortho_cases_charge_id")
+                        .HasFilter("charge_id IS NOT NULL");
+
+                    b.ToTable("ortho_cases", "orthodontics", t =>
+                        {
+                            t.HasCheckConstraint("ck_ortho_cases_appliance", "(area = 'Appliance') = (appliance_type IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.OrthoTermRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("DepositAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("deposit_amount");
+
+                    b.Property<DateTimeOffset>("EnteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("entered_at");
+
+                    b.Property<string>("EnteredByRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("entered_by_role");
+
+                    b.Property<Guid>("EnteredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entered_by_user_id");
+
+                    b.Property<decimal>("GrossTotalPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("gross_total_price");
+
+                    b.Property<int>("NumberOfMonths")
+                        .HasColumnType("integer")
+                        .HasColumnName("number_of_months");
+
+                    b.Property<Guid>("OrthoCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ortho_case_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision_number");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ortho_term_revisions");
+
+                    b.HasIndex("EnteredByUserId")
+                        .HasDatabaseName("ix_ortho_term_revisions_entered_by_user_id");
+
+                    b.HasIndex("OrthoCaseId", "RevisionNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ortho_term_revisions_ortho_case_id_revision_number");
+
+                    b.ToTable("ortho_term_revisions", "orthodontics", t =>
+                        {
+                            t.HasCheckConstraint("ck_ortho_term_revisions_amounts", "gross_total_price >= 0 AND deposit_amount >= 0 AND deposit_amount <= gross_total_price");
+
+                            t.HasCheckConstraint("ck_ortho_term_revisions_months", "number_of_months >= 1");
+
+                            t.HasCheckConstraint("ck_ortho_term_revisions_role", "(revision_number = 1 AND entered_by_role = 'DOCTOR') OR (revision_number > 1 AND entered_by_role = 'MANAGER')");
                         });
                 });
 
@@ -1037,6 +2124,413 @@ namespace Clinic.Persistence.Migrations
                         .HasDatabaseName("ix_patient_doctor_assignments_patient_id_assigned_at");
 
                     b.ToTable("patient_doctor_assignments", "patients");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Prescriptions.Domain.Prescription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<string>("GeneralNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("general_notes");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid>("VisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("visit_id");
+
+                    b.Property<DateTimeOffset?>("VoidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voided_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_prescriptions");
+
+                    b.HasIndex("DoctorId")
+                        .HasDatabaseName("ix_prescriptions_doctor_id");
+
+                    b.HasIndex("VisitId")
+                        .HasDatabaseName("ix_prescriptions_visit_id");
+
+                    b.HasIndex("PatientId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_prescriptions_patient_id_created_at");
+
+                    b.HasIndex("VisitId", "DoctorId")
+                        .HasDatabaseName("ix_prescriptions_visit_id_doctor_id");
+
+                    b.HasIndex("VisitId", "PatientId")
+                        .HasDatabaseName("ix_prescriptions_visit_id_patient_id");
+
+                    b.ToTable("prescriptions", "prescriptions");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Prescriptions.Domain.PrescriptionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Dosage")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("dosage");
+
+                    b.Property<string>("Duration")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("duration");
+
+                    b.Property<string>("Frequency")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("frequency");
+
+                    b.Property<string>("Instructions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("instructions");
+
+                    b.Property<string>("MedicationName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("medication_name");
+
+                    b.Property<Guid>("PrescriptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("prescription_id");
+
+                    b.Property<DateTimeOffset?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("removed_at");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id")
+                        .HasName("pk_prescription_items");
+
+                    b.HasIndex("PrescriptionId")
+                        .HasDatabaseName("ix_prescription_items_prescription_id");
+
+                    b.ToTable("prescription_items", "prescriptions");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.Appointment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<short>("DurationMinutes")
+                        .HasColumnType("smallint")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid?>("PreviousAppointmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("previous_appointment_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("SalesNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("sales_notes");
+
+                    b.Property<DateTimeOffset>("StartAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StatusChangeReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("status_change_reason");
+
+                    b.Property<DateTimeOffset?>("StatusChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("status_changed_at");
+
+                    b.Property<Guid?>("StatusChangedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("status_changed_by_user_id");
+
+                    b.Property<DateTimeOffset?>("VisitEndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("visit_ended_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_appointments");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_appointments_created_by_user_id");
+
+                    b.HasIndex("PreviousAppointmentId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_appointments_previous_appointment_id")
+                        .HasFilter("previous_appointment_id IS NOT NULL");
+
+                    b.HasIndex("StartAt")
+                        .HasDatabaseName("ix_appointments_start_at");
+
+                    b.HasIndex("StatusChangedByUserId")
+                        .HasDatabaseName("ix_appointments_status_changed_by_user_id");
+
+                    b.HasIndex("DoctorId", "StartAt")
+                        .HasDatabaseName("ix_appointments_doctor_id_start_at");
+
+                    b.HasIndex("PatientId", "StartAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_appointments_patient_id_start_at");
+
+                    b.HasIndex("Status", "StartAt")
+                        .HasDatabaseName("ix_appointments_status_start_at");
+
+                    b.ToTable("appointments", "scheduling", t =>
+                        {
+                            t.HasCheckConstraint("ck_appointments_duration", "duration_minutes BETWEEN 1 AND 480");
+
+                            t.HasCheckConstraint("ck_appointments_kind", "kind IN ('Standard', 'ImplantFollowUp')");
+
+                            t.HasCheckConstraint("ck_appointments_status", "status IN ('Scheduled', 'Confirmed', 'InTreatment', 'Completed', 'Cancelled', 'NoShow', 'Rescheduled')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.AppointmentArrival", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("appointment_id");
+
+                    b.Property<DateTimeOffset>("ArrivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("arrived_at");
+
+                    b.Property<Guid>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<DateTimeOffset?>("VoidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voided_at");
+
+                    b.Property<Guid?>("VoidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("voided_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_appointment_arrivals");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_appointment_arrivals_live")
+                        .HasFilter("voided_at IS NULL");
+
+                    b.HasIndex("ArrivedAt")
+                        .HasDatabaseName("ix_appointment_arrivals_arrived_at");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_appointment_arrivals_recorded_by_user_id");
+
+                    b.HasIndex("VoidedByUserId")
+                        .HasDatabaseName("ix_appointment_arrivals_voided_by_user_id");
+
+                    b.ToTable("appointment_arrivals", "scheduling");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.AvailabilityRange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("DayDate")
+                        .HasColumnType("date")
+                        .HasColumnName("day_date");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("end_time");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("start_time");
+
+                    b.Property<Guid>("WeekId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("week_id");
+
+                    b.Property<DateTimeOffset?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("withdrawn_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_availability_ranges");
+
+                    b.HasIndex("WeekId")
+                        .HasDatabaseName("ix_availability_ranges_week_id");
+
+                    b.HasIndex("DoctorId", "DayDate")
+                        .HasDatabaseName("ix_availability_ranges_doctor_id_day_date");
+
+                    b.ToTable("availability_ranges", "scheduling", t =>
+                        {
+                            t.HasCheckConstraint("ck_availability_ranges_order", "end_time > start_time");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.AvailabilityWeek", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid?>("PublishedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by_user_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateOnly>("WeekStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("week_start_date");
+
+                    b.HasKey("Id")
+                        .HasName("pk_availability_weeks");
+
+                    b.HasIndex("PublishedByUserId")
+                        .HasDatabaseName("ix_availability_weeks_published_by_user_id");
+
+                    b.HasIndex("DoctorId", "WeekStartDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_availability_weeks_doctor_id_week_start_date");
+
+                    b.ToTable("availability_weeks", "scheduling", t =>
+                        {
+                            t.HasCheckConstraint("ck_availability_weeks_status", "status IN ('Draft', 'Published')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.EffectiveBookedRange", b =>
+                {
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("appointment_id");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<DateTimeOffset>("EffectiveEndAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effective_end_at");
+
+                    b.Property<DateTimeOffset>("NominalEndAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("nominal_end_at");
+
+                    b.Property<DateTimeOffset>("StartAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_at");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("v_effective_booked_ranges", "scheduling");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Staff.Domain.Assistant", b =>
@@ -1350,6 +2844,223 @@ namespace Clinic.Persistence.Migrations
                         .HasConstraintName("fk_audit_log_users_user_id");
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.CaseWorkItem", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("PerformingDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_case_work_items_doctors_performing_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentCaseId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_case_work_items_cases_case_patient");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentRecord", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentRecordId", "PerformingDoctorId")
+                        .HasPrincipalKey("Id", "DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_case_work_items_records_record_doctor");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentRecord", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentRecordId", "TreatmentCaseId", "PatientId")
+                        .HasPrincipalKey("Id", "TreatmentCaseId", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_case_work_items_records_record_case_patient");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.ImplantDetails", b =>
+                {
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithOne()
+                        .HasForeignKey("Clinic.Modules.Clinical.Domain.ImplantDetails", "TreatmentCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_implant_details_treatment_cases_treatment_case_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.PricingDiscountEntry", b =>
+                {
+                    b.HasOne("Clinic.Modules.Clinical.Domain.CaseWorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("CaseWorkItemId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_pricing_discount_entries_case_work_items_case_work_item_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("ConsultationVisitId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_pricing_discount_entries_visits_consultation_visit_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("SetByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_pricing_discount_entries_users_set_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.RootCanalMeasurement", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_root_canal_measurements_doctors_recorded_by_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedInVisitId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_root_canal_measurements_visits_recorded_in_visit_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_root_canal_measurements_treatment_cases_treatment_case_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.TreatmentCase", b =>
+                {
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_cases_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.ProcedureType", null)
+                        .WithMany()
+                        .HasForeignKey("ProcedureTypeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_cases_procedure_types_procedure_type_id");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("StartedByDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_cases_doctors_started_by_doctor_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.TreatmentRecord", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_records_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentCaseId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_records_cases_case_patient");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("VisitId", "DoctorId")
+                        .HasPrincipalKey("Id", "DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_records_visits_visit_doctor");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("VisitId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_records_visits_visit_patient");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.TreatmentStep", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("CompletedByDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_treatment_steps_doctors_completed_by_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("CompletedInVisitId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_treatment_steps_visits_completed_in_visit_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_treatment_steps_treatment_cases_treatment_case_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.Visit", b =>
+                {
+                    b.HasOne("Clinic.Modules.Scheduling.Domain.Appointment", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_visits_appointments_appointment_id");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_visits_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("FinalizedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_visits_users_finalized_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_visits_patients_patient_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Clinical.Domain.VisitCorrection", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectingDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_visit_corrections_doctors_correcting_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("VisitId", "CorrectingDoctorId")
+                        .HasPrincipalKey("Id", "DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_visit_corrections_visits_visit_doctor");
+                });
+
             modelBuilder.Entity("Clinic.Modules.Configuration.Domain.Setting", b =>
                 {
                     b.HasOne("Clinic.Modules.Identity.Domain.User", null)
@@ -1361,6 +3072,12 @@ namespace Clinic.Persistence.Migrations
 
             modelBuilder.Entity("Clinic.Modules.Crm.Domain.FollowUp", b =>
                 {
+                    b.HasOne("Clinic.Modules.Scheduling.Domain.Appointment", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_follow_ups_appointments_appointment_id");
+
                     b.HasOne("Clinic.Modules.Staff.Domain.SalesEmployee", null)
                         .WithMany()
                         .HasForeignKey("AssignedSalesEmployeeId")
@@ -1384,6 +3101,12 @@ namespace Clinic.Persistence.Migrations
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_follow_ups_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Crm.Domain.Referral", null)
+                        .WithMany()
+                        .HasForeignKey("ReferralId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_follow_ups_referral_referral_id");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Crm.Domain.FollowUpContactAttempt", b =>
@@ -1438,6 +3161,29 @@ namespace Clinic.Persistence.Migrations
                         .HasConstraintName("fk_leads_lead_statuses_status");
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Crm.Domain.Referral", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_referrals_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_referrals_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("ReferringDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_referrals_doctors_referring_doctor_id");
+                });
+
             modelBuilder.Entity("Clinic.Modules.Crm.Domain.ResponsibilityHistoryEntry", b =>
                 {
                     b.HasOne("Clinic.Modules.Identity.Domain.User", null)
@@ -1457,6 +3203,89 @@ namespace Clinic.Persistence.Migrations
                         .HasForeignKey("ToSalesEmployeeId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_responsibility_history_sales_employees_to_sales_employee_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Feedback.Domain.FeedbackEntry", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_feedback_entries_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_feedback_entries_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_feedback_entries_users_recorded_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Feedback.Domain.FeedbackRequest", null)
+                        .WithMany()
+                        .HasForeignKey("FeedbackRequestId", "VisitId", "PatientId", "DoctorId")
+                        .HasPrincipalKey("Id", "VisitId", "PatientId", "DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_feedback_entries_requests_request_visit_patient_doctor");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Feedback.Domain.FeedbackRequest", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("SentByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_feedback_requests_users_sent_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("VisitId", "PatientId", "DoctorId")
+                        .HasPrincipalKey("Id", "PatientId", "DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_feedback_requests_visits_visit_patient_doctor");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.FixedLabExpense", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("EnteredByDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_fixed_lab_expenses_doctors_entered_by_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentCaseId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_fixed_lab_expenses_cases_case_patient");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.FixedLabRevision", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("EnteredByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_fixed_lab_revisions_users_entered_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Finance.FixedLabExpense", null)
+                        .WithMany()
+                        .HasForeignKey("FixedLabExpenseId", "TreatmentCaseId")
+                        .HasPrincipalKey("Id", "TreatmentCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_fixed_lab_revisions_expenses_expense_case");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Identity.Domain.RolePermission", b =>
@@ -1516,6 +3345,33 @@ namespace Clinic.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_notifications_users_recipient_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.OrthoCase", b =>
+                {
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithOne()
+                        .HasForeignKey("Clinic.Modules.Orthodontics.OrthoCase", "TreatmentCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_ortho_cases_treatment_cases_treatment_case_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.OrthoTermRevision", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("EnteredByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_ortho_term_revisions_users_entered_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Orthodontics.OrthoCase", null)
+                        .WithMany()
+                        .HasForeignKey("OrthoCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_ortho_term_revisions_ortho_cases_ortho_case_id");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Patients.Domain.Contact.PatientContact", b =>
@@ -1587,6 +3443,140 @@ namespace Clinic.Persistence.Migrations
                         .HasForeignKey("PreviousDoctorId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_patient_doctor_assignments_doctors_previous_doctor_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Prescriptions.Domain.Prescription", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_prescriptions_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_prescriptions_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("VisitId", "DoctorId")
+                        .HasPrincipalKey("Id", "DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_prescriptions_visits_visit_doctor");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("VisitId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_prescriptions_visits_visit_patient");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Prescriptions.Domain.PrescriptionItem", b =>
+                {
+                    b.HasOne("Clinic.Modules.Prescriptions.Domain.Prescription", null)
+                        .WithMany()
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_prescription_items_prescriptions_prescription_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.Appointment", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_appointments_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_appointments_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_appointments_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Scheduling.Domain.Appointment", null)
+                        .WithOne()
+                        .HasForeignKey("Clinic.Modules.Scheduling.Domain.Appointment", "PreviousAppointmentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_appointments_appointments_previous_appointment_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("StatusChangedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_appointments_users_status_changed_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.AppointmentArrival", b =>
+                {
+                    b.HasOne("Clinic.Modules.Scheduling.Domain.Appointment", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_appointment_arrivals_appointments_appointment_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_appointment_arrivals_users_recorded_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("VoidedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_appointment_arrivals_users_voided_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.AvailabilityRange", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_availability_ranges_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Scheduling.Domain.AvailabilityWeek", null)
+                        .WithMany()
+                        .HasForeignKey("WeekId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_availability_ranges_availability_weeks_week_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Scheduling.Domain.AvailabilityWeek", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_availability_weeks_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_availability_weeks_users_published_by_user_id");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Staff.Domain.Assistant", b =>

@@ -38,7 +38,7 @@ export interface Versioned<T> {
   etag: string | null;
 }
 
-type Method = 'GET' | 'POST' | 'PUT';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH';
 
 async function send(method: Method, url: string, body?: unknown, ifMatch?: string | null): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
@@ -95,6 +95,8 @@ export const api = {
     json<T>(await send('POST', url, body, ifMatch)),
   put: async <T>(url: string, body: unknown, ifMatch?: string | null): Promise<T> =>
     json<T>(await send('PUT', url, body, ifMatch)),
+  patch: async <T>(url: string, body: unknown, ifMatch?: string | null): Promise<T> =>
+    json<T>(await send('PATCH', url, body, ifMatch)),
   putVersioned: async <T>(url: string, body: unknown, ifMatch: string | null): Promise<Versioned<T>> => {
     const response = await send('PUT', url, body, ifMatch);
     return { data: await json<T>(response), etag: response.headers.get('ETag') };

@@ -116,7 +116,7 @@ public sealed class OpsAndSecurityTests(ApiFixture fixture)
 
         var anonymous = routes.Where(r => r.Kind == "anonymous").Select(r => $"{r.Method} {r.Route}").ToList();
         Assert.All(anonymous, a => Assert.Contains(a, AnonymousAllowList.Routes));
-        Assert.Equal(4, anonymous.Count); // csrf, login, health live, health ready; the public feedback pair arrives with Task 3.
+        Assert.Equal(6, anonymous.Count); // the complete allow-list: csrf, login, health live / ready and the public feedback pair.
         Assert.Contains(routes, r => r.Route == "/api/me" && r.Kind == "authenticated");
         Assert.Contains(routes, r => r.Route == "/api/auth/logout" && r.Kind == "authenticated");
         Assert.Contains(routes, r => r.Route == "/api/auth/change-password" && r.Kind == "authenticated");

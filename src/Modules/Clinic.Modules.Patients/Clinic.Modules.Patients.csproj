@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Notifications\Clinic.Modules.Notifications.csproj" />
     <ProjectReference Include="..\Clinic.Modules.Configuration\Clinic.Modules.Configuration.csproj" />
     <ProjectReference Include="..\Clinic.Modules.Staff\Clinic.Modules.Staff.csproj" />
   </ItemGroup>

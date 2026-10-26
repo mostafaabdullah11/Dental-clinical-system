@@ -1,4 +1,5 @@
 import { followUpStatusLabels, followUpTypeLabels, formatDateTime, type FollowUpStatus, type FollowUpType } from '../api/crm';
+import { appointmentStatusLabels, referralStatusLabels, referralTypeLabels, visitStatusLabels, type ReferralType } from '../api/task3';
 import { useLoad } from '../lib/useLoad';
 import { ErrorBanner } from './Form';
 
@@ -11,19 +12,37 @@ interface TimelineEntry {
   status: string | null;
 }
 
-const kindLabels: Record<string, string> = { FollowUp: 'متابعة' };
+const kindLabels: Record<string, string> = {
+  FollowUp: 'متابعة',
+  Appointment: 'موعد',
+  Visit: 'زيارة',
+  Treatment: 'علاج',
+  Prescription: 'وصفة طبية',
+  Referral: 'تحويل',
+};
+
+const statusLabels: Record<string, string> = {
+  ...appointmentStatusLabels,
+  ...visitStatusLabels,
+  ...referralStatusLabels,
+  Planned: 'مخططة',
+  Active: 'نشطة',
+};
 
 /**
- * Audience timeline (FR-PAT-010): the route decides the content. Follow-ups are shown now; visits, treatments,
- * prescriptions, appointments and payments are added by their modules in later phases.
+ * Audience timeline (FR-PAT-010): the route decides the content — the Doctor sees clinical entries (visits, treatments,
+ * prescriptions, referrals), Sales operational ones (appointments, follow-ups, referrals), the Manager both. Payments
+ * are added by Finance in Task 4.
  */
 export function PatientTimeline({ url }: { url: string }) {
   const { data, error } = useLoad<TimelineEntry[]>(url);
 
   const typeLabel = (e: TimelineEntry) =>
-    e.kind === 'FollowUp' && e.type ? followUpTypeLabels[e.type as FollowUpType] ?? e.type : e.type ?? '—';
+    e.kind === 'FollowUp' && e.type ? followUpTypeLabels[e.type as FollowUpType] ?? e.type
+      : e.kind === 'Referral' && e.type ? referralTypeLabels[e.type as ReferralType] ?? e.type : e.type ?? '—';
   const statusLabel = (e: TimelineEntry) =>
-    e.kind === 'FollowUp' && e.status ? followUpStatusLabels[e.status as FollowUpStatus] ?? e.status : e.status ?? '—';
+    e.kind === 'FollowUp' && e.status ? followUpStatusLabels[e.status as FollowUpStatus] ?? e.status
+      : e.status ? statusLabels[e.status] ?? e.status : '—';
 
   return (
     <div className="card">

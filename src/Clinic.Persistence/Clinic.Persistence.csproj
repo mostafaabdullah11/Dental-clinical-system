@@ -8,6 +8,12 @@
     <ProjectReference Include="..\Modules\Clinic.Modules.Notifications\Clinic.Modules.Notifications.csproj" />
     <ProjectReference Include="..\Modules\Clinic.Modules.Patients\Clinic.Modules.Patients.csproj" />
     <ProjectReference Include="..\Modules\Clinic.Modules.Staff\Clinic.Modules.Staff.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Clinical\Clinic.Modules.Clinical.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Feedback\Clinic.Modules.Feedback.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Finance\Clinic.Modules.Finance.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Orthodontics\Clinic.Modules.Orthodontics.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Prescriptions\Clinic.Modules.Prescriptions.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Scheduling\Clinic.Modules.Scheduling.csproj" />
   </ItemGroup>
 
   <ItemGroup>

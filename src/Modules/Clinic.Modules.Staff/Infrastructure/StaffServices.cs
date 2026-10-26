@@ -117,3 +117,28 @@ internal sealed class ActiveSalesEmployeeDirectory(DbContext db) : IActiveSalesE
             .ToDictionaryAsync(a => a.SalesEmployeeId, a => a.UserId, cancellationToken);
     }
 }
+
+internal sealed class DoctorDirectory(DbContext db) : IDoctorDirectory
+{
+    public async Task<IReadOnlyList<DoctorLookupItem>> ListAsync(bool activeOnly, CancellationToken cancellationToken) =>
+        await db.Set<Doctor>().AsNoTracking().Where(d => !activeOnly || d.IsActive).OrderBy(d => d.FullName)
+            .Select(d => new DoctorLookupItem(d.Id, d.FullName, d.Specialty, d.IsActive)).ToListAsync(cancellationToken);
+
+    public Task<DoctorLookupItem?> FindAsync(Guid doctorId, CancellationToken cancellationToken) =>
+        db.Set<Doctor>().AsNoTracking().Where(d => d.Id == doctorId)
+            .Select(d => new DoctorLookupItem(d.Id, d.FullName, d.Specialty, d.IsActive)).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<decimal> CurrentPercentageAsync(Guid doctorId, CancellationToken cancellationToken) =>
+        await db.Set<Doctor>().AsNoTracking().Where(d => d.Id == doctorId).Select(d => d.CurrentPercentage).SingleAsync(cancellationToken);
+}
+
+/// <summary>FR-NOTIF-002: notification recipients are Sales / Reception users whose staff record is active.</summary>
+internal sealed class NotificationRecipientDirectory(DbContext db) : Clinic.Modules.Notifications.Contracts.INotificationRecipientDirectory
+{
+    public async Task<IReadOnlySet<Guid>> ActiveAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken)
+    {
+        var ids = userIds.Distinct().ToList();
+        return (await db.Set<SalesEmployeeActivity>().AsNoTracking()
+            .Where(a => a.IsActive && ids.Contains(a.UserId)).Select(a => a.UserId).ToListAsync(cancellationToken)).ToHashSet();
+    }
+}

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Clinical\Clinic.Modules.Clinical.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Configuration\Clinic.Modules.Configuration.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Notifications\Clinic.Modules.Notifications.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Patients\Clinic.Modules.Patients.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Staff\Clinic.Modules.Staff.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Clinic.Persistence" />
+  </ItemGroup>
+
+</Project>

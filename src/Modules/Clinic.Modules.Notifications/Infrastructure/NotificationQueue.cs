@@ -29,4 +29,11 @@ internal sealed class NotificationQueue(DbContext db, IClock clock) : INotificat
             """, cancellationToken);
         return inserted == 1;
     }
+
+    public Task<int> CancelPendingAsync(string relatedEntityType, Guid relatedEntityId, CancellationToken cancellationToken) =>
+        db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE notifications.notifications SET status = {NotificationStatuses.Cancelled}
+            WHERE related_entity_type = {relatedEntityType} AND related_entity_id = {relatedEntityId}
+              AND status = {NotificationStatuses.Pending}
+            """, cancellationToken);
 }

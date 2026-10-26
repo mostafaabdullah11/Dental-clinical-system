@@ -1,5 +1,6 @@
 using Clinic.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 
 namespace Clinic.IntegrationTests.Infrastructure;
@@ -23,7 +24,10 @@ public sealed class TestDatabase : IAsyncDisposable
     public string AdminConnection { get; }
     public string Name { get; }
 
-    public static async Task<TestDatabase> CreateAsync()
+    public static Task<TestDatabase> CreateAsync() => CreateAsync(targetMigration: null);
+
+    /// <summary>A database migrated only up to <paramref name="targetMigration"/> (for upgrade tests); null = latest.</summary>
+    public static async Task<TestDatabase> CreateAsync(string? targetMigration)
     {
         var admin = Environment.GetEnvironmentVariable(AdminVariable);
         if (string.IsNullOrWhiteSpace(admin))
@@ -34,7 +38,7 @@ public sealed class TestDatabase : IAsyncDisposable
 
         var database = new TestDatabase(admin, "clinic_test_" + Guid.NewGuid().ToString("N")[..12]);
         await database.BootstrapAsync();
-        await database.MigrateAsync();
+        await database.MigrateAsync(targetMigration);
         return database;
     }
 
@@ -135,7 +139,8 @@ public sealed class TestDatabase : IAsyncDisposable
         }
     }
 
-    private async Task MigrateAsync()
+    /// <summary>Applies the migrations as clinic_migrator, up to the target (null = every migration).</summary>
+    public async Task MigrateAsync(string? targetMigration = null)
     {
         var options = new DbContextOptionsBuilder<ClinicDbContext>()
             .UseNpgsql(ConnectionFor("clinic_migrator"), n => n.MigrationsHistoryTable(
@@ -143,7 +148,7 @@ public sealed class TestDatabase : IAsyncDisposable
             .UseSnakeCaseNamingConvention()
             .Options;
         await using var context = new ClinicDbContext(options);
-        await context.Database.MigrateAsync();
+        await context.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>().MigrateAsync(targetMigration);
     }
 
     private static string RandomSecret() => Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(18));

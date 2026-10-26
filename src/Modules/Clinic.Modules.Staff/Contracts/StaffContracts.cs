@@ -29,6 +29,38 @@ public interface IStaffDirectory
     Task<bool> DoctorExistsAsync(Guid doctorId, CancellationToken cancellationToken);
 }
 
+public sealed record DoctorLookupItem(Guid Id, string FullName, string? Specialty, bool IsActive);
+
+/// <summary>
+/// Doctor lookups for scheduling and clinical work. The percentage is exposed only through
+/// <see cref="CurrentPercentageAsync"/>, which Clinical uses for the work-item snapshot (never a DTO).
+/// </summary>
+public interface IDoctorDirectory
+{
+    Task<IReadOnlyList<DoctorLookupItem>> ListAsync(bool activeOnly, CancellationToken cancellationToken);
+
+    Task<DoctorLookupItem?> FindAsync(Guid doctorId, CancellationToken cancellationToken);
+
+    Task<decimal> CurrentPercentageAsync(Guid doctorId, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// The signed-in principal in staff terms. Doctor / Sales identity always comes from the principal's own staff link
+/// (S1, S13); a Manager has neither, so "own" routes return 404 for the Manager.
+/// </summary>
+public interface ICurrentStaff
+{
+    Guid? UserId { get; }
+
+    string? Role { get; }
+
+    bool IsManager { get; }
+
+    Task<Guid?> DoctorIdAsync(CancellationToken cancellationToken);
+
+    Task<Guid?> SalesEmployeeIdAsync(CancellationToken cancellationToken);
+}
+
 public sealed record ActiveSalesEmployee(Guid SalesEmployeeId, Guid UserId);
 
 /// <summary>

@@ -35,6 +35,15 @@ internal sealed class ClinicSettings(DbContext db) : IClinicSettings
         return value != "false";
     }
 
+    public async Task<ClinicProfile> GetClinicProfileAsync(CancellationToken cancellationToken)
+    {
+        var values = await db.Set<Setting>().AsNoTracking()
+            .Where(s => s.Key == SettingKeys.ClinicName || s.Key == SettingKeys.ClinicContact)
+            .ToDictionaryAsync(s => s.Key, s => s.Value, cancellationToken);
+        return new ClinicProfile(values.GetValueOrDefault(SettingKeys.ClinicName) ?? string.Empty,
+            values.GetValueOrDefault(SettingKeys.ClinicContact) ?? string.Empty);
+    }
+
     public async Task<DateOnly> GetClinicTodayAsync(DateTimeOffset utcNow, CancellationToken cancellationToken)
     {
         var zone = await GetClinicTimeZoneAsync(cancellationToken);

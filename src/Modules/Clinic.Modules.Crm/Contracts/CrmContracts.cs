@@ -72,3 +72,26 @@ public interface IFollowUpDuePlanner
     /// <summary>Returns the number of newly enqueued notifications (duplicates are skipped by the dedupe key).</summary>
     Task<int> RunAsync(CancellationToken cancellationToken);
 }
+
+public static class ReferralTypes
+{
+    public const string Surgery = "Surgery";
+    public const string Implant = "Implant";
+    public const string Orthodontics = "Orthodontics";
+    public const string Prosthetics = "Prosthetics";
+    public const string Other = "Other";
+
+    public static readonly IReadOnlyList<string> All = [Surgery, Implant, Orthodontics, Prosthetics, Other];
+}
+
+/// <summary>Referral progress statuses (FR-REF-004), distinct from the four Follow-Up statuses.</summary>
+public static class ReferralStatuses
+{
+    public const string New = "New";
+    public const string Contacted = "Contacted";
+    public const string Booked = "Booked";
+    public const string Completed = "Completed";
+    public const string Lost = "Lost";
+
+    public static readonly IReadOnlyList<string> All = [New, Contacted, Booked, Completed, Lost];
+}

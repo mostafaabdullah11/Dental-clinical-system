@@ -180,3 +180,7 @@ export const sourceLabels: Record<SalesPatient['patientSource'], string> = {
   WalkIn: 'مباشر (Walk-In)',
   Lead: 'عميل محتمل (Lead)',
 };
+
+export interface UnreadCount {
+  count: number;
+}

@@ -10,6 +10,7 @@ internal static class ApiDocuments
     public const string Sales = "sales";
     public const string Manager = "manager";
     public const string Auth = "auth";
+    public const string Public = "public";
 
     public static void Add(IServiceCollection services)
     {
@@ -21,5 +22,9 @@ internal static class ApiDocuments
         services.AddOpenApi(Auth, o => o.ShouldInclude = d =>
             d.GroupName is null && (d.RelativePath?.StartsWith("api/auth", StringComparison.Ordinal) == true
                                     || d.RelativePath?.StartsWith("api/me", StringComparison.Ordinal) == true));
+
+        // The two anonymous feedback routes of the clinic website (Q-FDB-2).
+        services.AddOpenApi(Public, o => o.ShouldInclude = d =>
+            d.GroupName is null && d.RelativePath?.StartsWith("api/public", StringComparison.Ordinal) == true);
     }
 }

@@ -5,12 +5,19 @@ using Clinic.Api.Features.Health;
 using Clinic.Api.Features.Manager;
 using Clinic.Api.Features.Me;
 using Clinic.Modules.Audit;
+using Clinic.Modules.Clinical;
 using Clinic.Modules.Configuration;
 using Clinic.Modules.Crm;
+using Clinic.Modules.Feedback;
+using Clinic.Modules.Feedback.Infrastructure;
+using Clinic.Modules.Finance;
 using Clinic.Modules.Identity;
 using Clinic.Modules.Identity.Auth;
 using Clinic.Modules.Notifications;
+using Clinic.Modules.Orthodontics;
 using Clinic.Modules.Patients;
+using Clinic.Modules.Prescriptions;
+using Clinic.Modules.Scheduling;
 using Clinic.Modules.Staff;
 using Clinic.Persistence;
 using Clinic.SharedKernel.Errors;
@@ -33,6 +40,7 @@ public sealed class RateLimitOptions
     public int AuthPerIpPerMinute { get; set; } = 10;
     public int GeneralPerUserPerMinute { get; set; } = 300;
     public int PatientSearchPerUserPerMinute { get; set; } = 60;
+    public int PublicFeedbackPerIpPerMinute { get; set; } = 30;
 }
 
 internal static class ApiComposition
@@ -66,6 +74,12 @@ internal static class ApiComposition
         services.AddPatientsModule();
         services.AddNotificationsModule();
         services.AddCrmModule();
+        services.AddSchedulingModule();
+        services.AddClinicalModule();
+        services.AddPrescriptionsModule();
+        services.AddOrthodonticsModule();
+        services.AddFinanceModule();
+        services.AddFeedbackModule();
         services.AddValidatorsFromAssemblyContaining<CreateUserRequestValidator>(includeInternalTypes: true);
 
         services.Configure<JsonOptions>(o =>
@@ -78,6 +92,12 @@ internal static class ApiComposition
         services.Configure<RouteHandlerOptions>(o => o.ThrowOnBadRequest = true);
         services.Configure<SecurityOptions>(config.GetSection("Security"));
         services.Configure<RateLimitOptions>(config.GetSection("Security:RateLimits"));
+        services.Configure<FeedbackOptions>(config.GetSection("Feedback"));
+
+        // CORS is off everywhere except the clinic-website origin on the two public feedback routes (DEPLOYMENT_ARCHITECTURE.md).
+        var websiteOrigins = config.GetSection("Feedback:WebsiteOrigins").Get<string[]>() ?? [];
+        services.AddCors(o => o.AddPolicy(FeedbackModule.WebsiteCorsPolicy, p =>
+            p.WithOrigins(websiteOrigins).WithMethods("GET", "POST").WithHeaders("Content-Type")));
 
         // Each host owns its logger (never the static Log.Logger), so one host can never silence another.
         services.AddSerilog((sp, logger) => ClinicLogging.Configure(logger, sp), preserveStaticLogger: true);
@@ -111,6 +131,7 @@ internal static class ApiComposition
 
         app.UseForwardedHeaders();
         app.UseRouting();
+        app.UseCors();
         app.UseMiddleware<UnmatchedRouteMiddleware>();
         app.UseAuthentication();
         app.UseRateLimiter();
@@ -119,15 +140,26 @@ internal static class ApiComposition
 
         IdentityModule.MapAuthEndpoints(app);
         MeEndpoints.Map(app);
+        NotificationsModule.MapInboxEndpoints(app);
+        FeedbackModule.MapPublicEndpoints(app);
         HealthEndpoints.Map(app);
 
         // Audience prefixes are organization only; the permission key is the check (API A1).
         var doctor = app.MapGroup("/api/doctor").WithGroupName(ApiDocuments.Doctor);
         PatientsModule.MapDoctorEndpoints(doctor);
+        SchedulingModule.MapDoctorEndpoints(doctor);
+        ClinicalModule.MapDoctorEndpoints(doctor);
+        PrescriptionsModule.MapDoctorEndpoints(doctor);
+        OrthodonticsModule.MapDoctorEndpoints(doctor);
+        FinanceModule.MapDoctorEndpoints(doctor);
+        CrmModule.MapDoctorEndpoints(doctor);
 
         var sales = app.MapGroup("/api/sales").WithGroupName(ApiDocuments.Sales);
         PatientsModule.MapSalesEndpoints(sales);
         CrmModule.MapSalesEndpoints(sales);
+        SchedulingModule.MapSalesEndpoints(sales);
+        ClinicalModule.MapSalesEndpoints(sales);
+        FeedbackModule.MapSalesEndpoints(sales);
 
         var manager = app.MapGroup("/api/manager").WithGroupName(ApiDocuments.Manager);
         IdentityModule.MapManagerEndpoints(manager);
@@ -137,6 +169,8 @@ internal static class ApiComposition
         AuditModule.MapManagerEndpoints(manager);
         PatientsModule.MapManagerEndpoints(manager);
         CrmModule.MapManagerEndpoints(manager);
+        SchedulingModule.MapManagerEndpoints(manager);
+        FeedbackModule.MapManagerEndpoints(manager);
 
         if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
         {
@@ -223,6 +257,10 @@ internal static class ApiComposition
             o.AddPolicy(RateLimitPolicies.PatientSearch, http => RateLimitPartition.GetFixedWindowLimiter(
                 "patient-search:" + (http.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous"),
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = limits.PatientSearchPerUserPerMinute, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+
+            o.AddPolicy(RateLimitPolicies.PublicFeedback, http => RateLimitPartition.GetFixedWindowLimiter(
+                "feedback-ip:" + (http.Connection.RemoteIpAddress?.ToString() ?? "unknown"),
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = limits.PublicFeedbackPerIpPerMinute, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(http =>
             {

@@ -54,6 +54,7 @@ internal static class CrmModel
             e.Property(x => x.Result).HasMaxLength(2000);
             e.Property(x => x.RowVersion).IsRowVersion().HasColumnName("xmin").HasColumnType("xid");
             e.HasOne<Lead>().WithMany().HasForeignKey(x => x.LeadId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<Referral>().WithMany().HasForeignKey(x => x.ReferralId).OnDelete(DeleteBehavior.NoAction);
             e.HasIndex(x => new { x.AssignedSalesEmployeeId, x.Status, x.DueDate });
             e.HasIndex(x => x.DueDate);
             e.HasIndex(x => new { x.AssignedSalesEmployeeId, x.DueDate })
@@ -68,6 +69,24 @@ internal static class CrmModel
             e.Property(x => x.Notes).HasMaxLength(2000);
             e.HasOne<FollowUp>().WithMany().HasForeignKey(x => x.FollowUpId).OnDelete(DeleteBehavior.NoAction);
             e.HasIndex(x => new { x.FollowUpId, x.AttemptedAt });
+        });
+
+        model.Entity<Referral>(e =>
+        {
+            e.ToTable("referrals", Schema, t =>
+            {
+                t.HasCheckConstraint("ck_referrals_type", $"referral_type IN ({In(ReferralTypes.All)})");
+                t.HasCheckConstraint("ck_referrals_status", $"follow_up_status IN ({In(ReferralStatuses.All)})");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ReferralType).HasMaxLength(20);
+            e.Property(x => x.Reason).HasMaxLength(1000);
+            e.Property(x => x.Notes).HasMaxLength(4000);
+            e.Property(x => x.FollowUpInstructions).HasMaxLength(1000);
+            e.Property(x => x.FollowUpStatus).HasMaxLength(20);
+            e.Property(x => x.RowVersion).IsRowVersion().HasColumnName("xmin").HasColumnType("xid");
+            e.HasIndex(x => new { x.FollowUpStatus, x.CreatedAt });
+            e.HasIndex(x => x.PatientId);
         });
 
         model.Entity<ResponsibilityHistoryEntry>(e =>

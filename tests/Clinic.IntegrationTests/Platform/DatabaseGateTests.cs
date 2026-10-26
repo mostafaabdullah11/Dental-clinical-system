@@ -10,10 +10,16 @@ namespace Clinic.IntegrationTests.Platform;
 /// </summary>
 public sealed class DatabaseGateTests(ApiFixture fixture)
 {
-    private static readonly string[] Schemas = ["audit", "configuration", "crm", "identity", "infra", "notifications", "patients", "staff"];
+    private static readonly string[] Schemas =
+    [
+        "audit", "clinical", "configuration", "crm", "feedback", "finance", "identity", "infra", "notifications", "orthodontics", "patients", "prescriptions", "scheduling", "staff",
+    ];
+
+    private const string SchemaArray =
+        "ARRAY['audit','clinical','configuration','crm','feedback','finance','identity','infra','notifications','orthodontics','patients','prescriptions','scheduling','staff']";
 
     [Fact]
-    public async Task Only_the_foundation_schemas_exist()
+    public async Task Only_the_task3_schemas_exist()
     {
         var schemas = await fixture.Database.ColumnAsync(
             "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname NOT IN ('information_schema', 'public') ORDER BY nspname");
@@ -24,25 +30,34 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
     public async Task Expected_tables_exist_and_no_premature_or_out_of_scope_table_exists()
     {
         var tables = await fixture.Database.ColumnAsync(
-            "SELECT table_schema || '.' || table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema = ANY(ARRAY['audit','configuration','crm','identity','infra','notifications','patients','staff']) ORDER BY 1");
+            $"SELECT table_schema || '.' || table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema = ANY({SchemaArray}) ORDER BY 1");
         Assert.Equal(
-        [
-            "audit.audit_log", "configuration.settings", "crm.follow_up_contact_attempts", "crm.follow_ups", "crm.lead_statuses",
-            "crm.leads", "crm.responsibility_history", "identity.permissions", "identity.role_permissions", "identity.roles",
-            "identity.user_roles", "identity.users", "infra.__EFMigrationsHistory", "infra.data_protection_keys",
-            "notifications.notifications", "patients.patient_contacts", "patients.patient_doctor_assignments", "patients.patient_medical_histories",
-            "patients.patients", "staff.assistants", "staff.doctors", "staff.sales_commission_rate_history", "staff.sales_employees",
-        ], tables);
+        new[]
+        {
+            "audit.audit_log", "clinical.case_work_items", "clinical.implant_details", "clinical.pricing_discount_entries",
+            "clinical.procedure_types", "clinical.root_canal_measurements", "clinical.treatment_cases", "clinical.treatment_records",
+            "clinical.treatment_steps", "clinical.visit_corrections", "clinical.visits", "configuration.settings",
+            "crm.follow_up_contact_attempts", "crm.follow_ups", "crm.lead_statuses", "crm.leads",
+            "crm.referrals", "crm.responsibility_history", "feedback.feedback_entries", "feedback.feedback_requests",
+            "finance.fixed_lab_expenses", "finance.fixed_lab_revisions", "identity.permissions", "identity.role_permissions",
+            "identity.roles", "identity.user_roles", "identity.users", "infra.__EFMigrationsHistory",
+            "infra.data_protection_keys", "notifications.notifications", "orthodontics.ortho_cases", "orthodontics.ortho_term_revisions",
+            "patients.patient_contacts", "patients.patient_doctor_assignments", "patients.patient_medical_histories", "patients.patients",
+            "prescriptions.prescription_items", "prescriptions.prescriptions", "scheduling.appointment_arrivals", "scheduling.appointments",
+            "scheduling.availability_ranges", "scheduling.availability_weeks", "staff.assistants", "staff.doctors",
+            "staff.sales_commission_rate_history", "staff.sales_employees",
+        }.Order(StringComparer.Ordinal), tables.Order(StringComparer.Ordinal));
 
         var everything = await fixture.Database.ColumnAsync(
             "SELECT lower(table_schema || '.' || table_name) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog','information_schema')");
-        Assert.DoesNotContain(everything, t => t.Contains("inventory") || t.Contains("stock") || t.Contains("warehouse")
-                                               || t.Contains("xray") || t.Contains("x_ray") || t.Contains("imaging")
-                                               || t.Contains("branch") || t.Contains("payroll") || t.Contains("visit")
-                                               || t.Contains("appointment") || t.Contains("referral") || t.Contains("finance")
-                                               || t.Contains("clinical") || t.Contains("installment") || t.Contains("expense")
-                                               || t.Contains("attendance") || t.Contains("feedback") || t.Contains("lab")
-                                               || t.Contains("charge") || t.Contains("payment") || t.Contains("insurance"));
+        // Still out of scope after Task 3 (Task 4 finance / payroll / attendance tables, and everything V1 excludes).
+        var forbidden = new[]
+        {
+            "inventory", "stock", "warehouse", "xray", "x_ray", "imaging", "branch", "payroll", "installment", "attendance", "overtime",
+            "charge", "payment", "allocation", "credit", "distribution", "entitlement", "earning", "insurance", "consent", "invoice",
+            "receipt", "daily_clos", "portal", "clinic_expenses", "expense_categor", "lab_percentage",
+        };
+        Assert.DoesNotContain(everything, t => forbidden.Any(f => t.Contains(f, StringComparison.Ordinal)));
     }
 
     [Fact] // AC-OPS-002 / AC-NEG-003
@@ -56,7 +71,7 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
     public async Task Money_columns_are_numeric_and_no_float_column_exists()
     {
         Assert.Equal(0, await fixture.Database.ScalarAsync<long>(
-            "SELECT count(*) FROM information_schema.columns WHERE table_schema = ANY(ARRAY['audit','configuration','crm','identity','infra','notifications','patients','staff']) AND data_type IN ('real','double precision','money')"));
+            $"SELECT count(*) FROM information_schema.columns WHERE table_schema = ANY({SchemaArray}) AND data_type IN ('real','double precision','money')"));
 
         var money = await fixture.Database.ColumnAsync("""
             SELECT table_name || '.' || column_name || ':' || numeric_precision || ',' || numeric_scale
@@ -107,7 +122,7 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
     public async Task Cross_module_foreign_keys_match_the_declared_file()
     {
         var actual = await fixture.Database.ColumnAsync("""
-            SELECT tc.table_schema || '.' || tc.table_name || '.' || kcu.column_name || '>' || ccu.table_schema || '.' || ccu.table_name || '|' || rc.delete_rule
+            SELECT DISTINCT tc.table_schema || '.' || tc.table_name || '.' || kcu.column_name || '>' || ccu.table_schema || '.' || ccu.table_name || '|' || rc.delete_rule
             FROM information_schema.table_constraints tc
             JOIN information_schema.key_column_usage kcu ON kcu.constraint_name = tc.constraint_name AND kcu.table_schema = tc.table_schema
             JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
@@ -137,6 +152,50 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
             "crm.responsibility_history.changed_by_user_id>identity.users",
             "notifications.notifications.recipient_user_id>identity.users",
             "notifications.notifications.patient_id>patients.patients",
+            // Task 3 (composite FKs list each of their columns once)
+            "scheduling.availability_weeks.doctor_id>staff.doctors",
+            "scheduling.availability_weeks.published_by_user_id>identity.users",
+            "scheduling.availability_ranges.doctor_id>staff.doctors",
+            "scheduling.appointments.patient_id>patients.patients",
+            "scheduling.appointments.doctor_id>staff.doctors",
+            "scheduling.appointments.status_changed_by_user_id>identity.users",
+            "scheduling.appointments.created_by_user_id>identity.users",
+            "scheduling.appointment_arrivals.recorded_by_user_id>identity.users",
+            "scheduling.appointment_arrivals.voided_by_user_id>identity.users",
+            "clinical.visits.patient_id>patients.patients",
+            "clinical.visits.doctor_id>staff.doctors",
+            "clinical.visits.appointment_id>scheduling.appointments",
+            "clinical.visits.finalized_by_user_id>identity.users",
+            "clinical.treatment_cases.patient_id>patients.patients",
+            "clinical.treatment_cases.started_by_doctor_id>staff.doctors",
+            "clinical.treatment_records.doctor_id>staff.doctors",
+            "clinical.case_work_items.performing_doctor_id>staff.doctors",
+            "clinical.treatment_steps.completed_by_doctor_id>staff.doctors",
+            "clinical.root_canal_measurements.recorded_by_doctor_id>staff.doctors",
+            "clinical.visit_corrections.correcting_doctor_id>staff.doctors",
+            "clinical.pricing_discount_entries.set_by_user_id>identity.users",
+            "prescriptions.prescriptions.visit_id>clinical.visits",
+            "prescriptions.prescriptions.patient_id>clinical.visits",
+            "prescriptions.prescriptions.doctor_id>clinical.visits",
+            "prescriptions.prescriptions.patient_id>patients.patients",
+            "prescriptions.prescriptions.doctor_id>staff.doctors",
+            "crm.referrals.patient_id>patients.patients",
+            "crm.referrals.referring_doctor_id>staff.doctors",
+            "crm.referrals.created_by_user_id>identity.users",
+            "crm.follow_ups.appointment_id>scheduling.appointments",
+            "feedback.feedback_requests.visit_id>clinical.visits",
+            "feedback.feedback_requests.patient_id>clinical.visits",
+            "feedback.feedback_requests.doctor_id>clinical.visits",
+            "feedback.feedback_requests.sent_by_user_id>identity.users",
+            "feedback.feedback_entries.patient_id>patients.patients",
+            "feedback.feedback_entries.doctor_id>staff.doctors",
+            "feedback.feedback_entries.recorded_by_user_id>identity.users",
+            "orthodontics.ortho_cases.treatment_case_id>clinical.treatment_cases",
+            "orthodontics.ortho_term_revisions.entered_by_user_id>identity.users",
+            "finance.fixed_lab_expenses.treatment_case_id>clinical.treatment_cases",
+            "finance.fixed_lab_expenses.patient_id>clinical.treatment_cases",
+            "finance.fixed_lab_expenses.entered_by_doctor_id>staff.doctors",
+            "finance.fixed_lab_revisions.entered_by_user_id>identity.users",
         };
         Assert.Equal(expected.Order(), actual.Select(a => a.Split('|')[0]).Order());
         Assert.All(actual, a => Assert.EndsWith("|NO ACTION", a));
@@ -193,7 +252,7 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
     public async Task All_objects_are_owned_by_the_migrator()
     {
         var owners = await fixture.Database.ColumnAsync(
-            "SELECT DISTINCT tableowner FROM pg_tables WHERE schemaname = ANY(ARRAY['audit','configuration','crm','identity','infra','notifications','patients','staff'])");
+            $"SELECT DISTINCT tableowner FROM pg_tables WHERE schemaname = ANY({SchemaArray}) UNION SELECT DISTINCT viewowner FROM pg_views WHERE schemaname = ANY({SchemaArray})");
         Assert.Equal(["clinic_migrator"], owners);
     }
 
@@ -215,7 +274,9 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
         var applied = await fixture.Database.ColumnAsync("SELECT migration_id FROM infra.\"__EFMigrationsHistory\" ORDER BY 1");
         Assert.Equal(["Identity_Initial", "Audit_Initial", "Configuration_Initial", "Staff_Initial", "Infra_Initial", "Xref_InitialForeignKeys",
                 "Patients_Initial", "Xref_PatientsForeignKeys", "Identity_PatientsPermissions", "Notifications_Initial", "Crm_Initial",
-                "Xref_CrmForeignKeys", "Staff_SalesActivityUserId", "Identity_CrmPermissions", "Identity_TimelinePermissions"],
+                "Xref_CrmForeignKeys", "Staff_SalesActivityUserId", "Identity_CrmPermissions", "Identity_TimelinePermissions",
+                "Crm_Referrals", "Scheduling_Initial", "Clinical_Initial", "Prescriptions_Initial", "Orthodontics_Initial",
+                "Finance_FixedLabInitial", "Feedback_Initial", "Xref_Task3ForeignKeys", "Identity_Task3Permissions", "Notifications_Task3Grants"],
             applied.Select(m => m[15..]));
     }
 }

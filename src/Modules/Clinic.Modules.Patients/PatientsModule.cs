@@ -27,6 +27,8 @@ public static class PatientsModule
         services.AddScoped<MedicalHistoryService>();
         services.AddScoped<PatientPresentation>();
         services.AddScoped<IPatientDirectory, PatientDirectory>();
+        services.AddScoped<Clinic.Modules.Patients.Contracts.Contact.IPatientContactDirectory, PatientContactDirectory>();
+        services.AddScoped<Clinic.Modules.Notifications.Contracts.INotificationSubjectReader, NotificationSubjectReader>();
         services.AddScoped<PatientContactViews>();
 
         // Ports implemented by later modules; these technical defaults return "not available" / "no Visit".

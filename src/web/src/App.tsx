@@ -1,6 +1,15 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext';
 import { AppShell } from './layout/AppShell';
+import { AppointmentsPage } from './pages/AppointmentsPage';
+import { AvailabilityPage } from './pages/AvailabilityPage';
+import { DoctorQueuePage, DoctorSchedulePage } from './pages/DoctorSchedulePage';
+import { FeedbackQueuePage, FeedbackResultsPage } from './pages/FeedbackPages';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { PrescriptionPrintPage } from './pages/PrescriptionPrintPage';
+import { PublicFeedbackPage } from './pages/PublicFeedbackPage';
+import { ReferralsPage } from './pages/ReferralsPage';
+import { VisitPage } from './pages/VisitPage';
 import { AssistantsPage } from './pages/AssistantsPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { DoctorsPage } from './pages/DoctorsPage';
@@ -27,6 +36,7 @@ export function App() {
   if (!me) {
     return (
       <Routes>
+        <Route path="feedback/:token" element={<PublicFeedbackPage />} />
         <Route path="*" element={<LoginPage />} />
       </Routes>
     );
@@ -35,6 +45,8 @@ export function App() {
   // Route guards are usability only; the backend enforces every permission.
   return (
     <Routes>
+      <Route path="feedback/:token" element={<PublicFeedbackPage />} />
+      <Route path="prescriptions/:id/print" element={<PrescriptionPrintPage />} />
       <Route element={<AppShell />}>
         <Route index element={<HomePage />} />
         <Route path="patients" element={<PatientsSearchPage />} />
@@ -49,6 +61,15 @@ export function App() {
         <Route path="sales" element={<SalesPage />} />
         <Route path="assistants" element={<AssistantsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="availability" element={<AvailabilityPage />} />
+        <Route path="appointments" element={<AppointmentsPage />} />
+        <Route path="queue" element={<DoctorQueuePage />} />
+        <Route path="my-schedule" element={<DoctorSchedulePage />} />
+        <Route path="visits/:id" element={<VisitPage />} />
+        <Route path="referrals" element={<ReferralsPage />} />
+        <Route path="feedback" element={<FeedbackQueuePage />} />
+        <Route path="feedback-results" element={<FeedbackResultsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="change-password" element={<ChangePasswordPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

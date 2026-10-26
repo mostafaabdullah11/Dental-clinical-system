@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBanner, Field } from '../components/Form';
 import { MedicalIntakeEditor, MedicalIntakeReadOnly } from '../components/MedicalIntake';
+import { DoctorClinicalSection, SalesPatientSection } from '../components/PatientTask3';
 import { PatientTimeline } from '../components/PatientTimeline';
 import { formatAge } from '../lib/patients';
 
@@ -45,9 +46,10 @@ function DoctorPatientView({ id }: { id: string }) {
         {patient.dateOfBirth && <p>تاريخ الميلاد: {patient.dateOfBirth}</p>}
         <p>الطبيب الحالي: {patient.currentDoctor?.name ?? '—'}</p>
         <p>الشكوى الرئيسية: {patient.chiefComplaint ?? '—'}</p>
-        <p className="hint">تعديل الشكوى الرئيسية يتطلب زيارة مفتوحة للطبيب (تتوفر مع وحدة الزيارات).</p>
+        <p className="hint">تعديل الشكوى الرئيسية يتطلب زيارة مفتوحة للطبيب.</p>
       </div>
       <MedicalIntakeReadOnly patientId={id} />
+      <DoctorClinicalSection patientId={id} />
       <PatientTimeline url={`/api/doctor/patients/${id}/timeline`} />
     </section>
   );
@@ -101,6 +103,8 @@ function ContactAudiencePatient({ id }: { id: string }) {
       {can('Patients.Contact.Write') && <ContactForm patient={patient} onSaved={setPatient} />}
       {can('Patients.MedicalHistory.EditIntake') && <MedicalIntakeEditor patientId={id} />}
       {can('Patients.Reassign') && <AssignmentPanel patientId={id} onChanged={() => void load()} />}
+      <SalesPatientSection patientId={id} />
+      {isManager && <DoctorClinicalSection patientId={id} />}
       <PatientTimeline url={isManager ? `/api/manager/patients/${id}/timeline` : `/api/sales/patients/${id}/timeline`} />
     </section>
   );

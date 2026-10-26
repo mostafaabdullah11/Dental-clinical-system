@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Clinic.Api\Clinic.Api.csproj" />
+    <!-- Aliased: both hosts declare a top-level Program. The tests run jobs through the Worker's own composition. -->
+    <ProjectReference Include="..\..\src\Clinic.Worker\Clinic.Worker.csproj" Aliases="worker" />
   </ItemGroup>
 
   <ItemGroup>

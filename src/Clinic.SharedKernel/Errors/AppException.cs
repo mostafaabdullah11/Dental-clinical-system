@@ -29,6 +29,9 @@ public class AppException : Exception
     public static AppException Rule(string field, string fieldCode) =>
         new(422, ErrorCodes.RuleViolation, new Dictionary<string, string[]> { [field] = [fieldCode] });
 
+    /// <summary>A refusal with a specific, documented problem code (for example 422 <c>visit.finalized</c>).</summary>
+    public static AppException Coded(int status, string code) => new(status, code);
+
     public static AppException PreconditionRequired() => new(428, ErrorCodes.PreconditionRequired);
 
     public static AppException Stale() => new(412, ErrorCodes.ConcurrencyStale);

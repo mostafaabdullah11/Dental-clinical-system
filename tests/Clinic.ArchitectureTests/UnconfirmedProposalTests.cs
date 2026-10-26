@@ -41,11 +41,11 @@ public sealed class UnconfirmedProposalTests
     }
 
     [Fact]
-    public void Only_the_four_staff_and_auth_api_audiences_exist()
+    public void Only_the_staff_auth_and_public_feedback_api_documents_exist()
     {
         var documents = typeof(Clinic.Api.Composition.SecurityOptions).Assembly.GetType("Clinic.Api.Composition.ApiDocuments", throwOnError: true)!;
         var audiences = documents.GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(f => f.IsLiteral).Select(f => (string)f.GetRawConstantValue()!).Order().ToArray();
-        Assert.Equal(["auth", "doctor", "manager", "sales"], audiences);
+        Assert.Equal(["auth", "doctor", "manager", "public", "sales"], audiences); // public = the two anonymous feedback routes (Q-FDB-2)
     }
 }

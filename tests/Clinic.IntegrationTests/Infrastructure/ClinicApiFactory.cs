@@ -77,7 +77,7 @@ internal sealed class TestActor(OperatorModeSwitch operatorMode, IHttpContextAcc
 }
 
 public sealed class ClinicApiFactory(TestDatabase database, int authRateLimit = 10_000, int patientSearchRateLimit = 10_000,
-    Action<IServiceCollection>? configureServices = null)
+    Action<IServiceCollection>? configureServices = null, int publicFeedbackPerIpRateLimit = 10_000)
     : WebApplicationFactory<Program>
 {
     public MutableClock Clock { get; } = new();
@@ -92,6 +92,7 @@ public sealed class ClinicApiFactory(TestDatabase database, int authRateLimit = 
         builder.UseSetting("Security:RateLimits:AuthPerIpPerMinute", authRateLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Security:RateLimits:GeneralPerUserPerMinute", "100000");
         builder.UseSetting("Security:RateLimits:PatientSearchPerUserPerMinute", patientSearchRateLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        builder.UseSetting("Security:RateLimits:PublicFeedbackPerIpPerMinute", publicFeedbackPerIpRateLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<IClock>();

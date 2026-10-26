@@ -53,6 +53,15 @@ internal sealed class FollowUpDuePlanner(
     }
 }
 
+/// <summary>J4 re-validation: a follow-up notification is still valid while the follow-up is open.</summary>
+internal sealed class FollowUpNotificationValidator(DbContext db) : INotificationSourceValidator
+{
+    public string RelatedEntityType => NotificationEntityTypes.FollowUp;
+
+    public Task<bool> IsStillValidAsync(Guid relatedEntityId, Guid recipientUserId, CancellationToken cancellationToken) =>
+        db.Set<FollowUp>().AsNoTracking().WhereOpen().AnyAsync(f => f.Id == relatedEntityId, cancellationToken);
+}
+
 /// <summary>
 /// J7 counts produced by Crm (API B6): open follow-ups owned by an inactive Sales employee (should be 0 after
 /// redistribution) and unassigned open Leads / Follow-Ups (informational). Counts only.

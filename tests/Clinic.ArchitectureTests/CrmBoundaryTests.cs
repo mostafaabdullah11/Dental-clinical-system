@@ -47,18 +47,21 @@ public sealed class CrmBoundaryTests
         }
     }
 
-    [Fact]
-    public void Crm_has_no_doctor_audience_and_internal_entities()
+    [Fact] // The only Doctor-facing CRM surface is the referral pair (FR-REF-001/002): no contact contract, no contact data.
+    public void Crm_doctor_surface_is_referrals_only_and_entities_are_internal()
     {
         Assert.DoesNotContain(Crm.GetTypes(), t => t.Namespace?.Contains(".Doctor", StringComparison.Ordinal) == true);
+        var doctorReferrals = Types.InAssembly(Crm).That().ResideInNamespace("Clinic.Modules.Crm.Features.Referrals")
+            .ShouldNot().HaveDependencyOnAny("Clinic.Modules.Patients.Contracts.Contact", "Clinic.Modules.Crm.Features.Sales").GetResult();
+        Assert.True(doctorReferrals.IsSuccessful, string.Join(", ", doctorReferrals.FailingTypeNames ?? []));
         Assert.DoesNotContain(new[] { Crm, Notifications }.SelectMany(a => a.GetTypes()),
             t => t.Namespace?.EndsWith(".Domain", StringComparison.Ordinal) == true && t.IsPublic);
     }
 
-    [Fact] // No Referral / Scheduling / Finance / Payroll type is implemented by this slice; no floating point
+    [Fact] // No Task 4 concept (commission, installments, charges, payments, payroll) lives in CRM; no floating point
     public void Crm_implements_no_premature_concept_and_no_floating_point()
     {
-        var forbidden = new[] { "Referral", "Appointment", "Visit", "Commission", "Installment", "Charge", "Payment", "Payroll", "Inventory" };
+        var forbidden = new[] { "Commission", "Installment", "Charge", "Payment", "Payroll", "Inventory" };
         var names = new[] { Crm, Notifications }.SelectMany(a => a.GetTypes()).Where(t => !t.Name.Contains('<')).Select(t => t.Name);
         Assert.DoesNotContain(names, n => forbidden.Any(f => n.Contains(f, StringComparison.Ordinal)));
 

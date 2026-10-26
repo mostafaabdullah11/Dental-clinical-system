@@ -29,9 +29,12 @@ internal static partial class ClinicLogging
             .Enrich.With<SensitiveValueMasking>()
             .WriteTo.Console(new RenderedCompactJsonFormatter());
 
-    /// <summary>Masks phone numbers and emails inside any text.</summary>
+    /// <summary>Masks phone numbers, emails and public feedback tokens (FR-FDB-003: tokens are never logged) inside any text.</summary>
     public static string MaskText(string text) =>
-        EmailPattern().Replace(PhonePattern().Replace(text, Mask), Mask);
+        FeedbackTokenPattern().Replace(EmailPattern().Replace(PhonePattern().Replace(text, Mask), Mask), "/api/public/feedback/" + Mask);
+
+    [GeneratedRegex(@"/api/public/feedback/[^/\s?""#]+", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    private static partial Regex FeedbackTokenPattern();
 
     // Egyptian mobiles (01x…, 201x…, +201x…, 00201x…) with optional separators, plus any other long digit run.
     [GeneratedRegex(@"(?:(?:\+|00)?20[\s-]?)?0?1[0125](?:[\s-]?\d){8}|\+?\d(?:[\s-]?\d){8,14}", RegexOptions.CultureInvariant)]

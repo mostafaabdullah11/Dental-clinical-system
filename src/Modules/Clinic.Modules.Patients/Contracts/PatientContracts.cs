@@ -82,7 +82,14 @@ public sealed record PatientRef(Guid Id, string PatientCode, string FullName);
 public interface IPatientDirectory
 {
     Task<IReadOnlyDictionary<Guid, PatientRef>> FindManyAsync(IEnumerable<Guid> patientIds, CancellationToken cancellationToken);
+
+    /// <summary>Code, name and age display (clinic-local today): safe for every audience, including Doctors.</summary>
+    Task<IReadOnlyDictionary<Guid, PatientClinicalRef>> FindClinicalManyAsync(IEnumerable<Guid> patientIds, CancellationToken cancellationToken);
+
+    Task<bool> ExistsAsync(Guid patientId, CancellationToken cancellationToken);
 }
+
+public sealed record PatientClinicalRef(Guid Id, string PatientCode, string FullName, AgeDisplay AgeDisplay);
 
 /// <summary>The three timeline audiences of FR-PAT-010.</summary>
 public static class TimelineAudiences

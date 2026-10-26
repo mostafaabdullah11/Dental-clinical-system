@@ -92,7 +92,9 @@ public sealed class CrmPrivacyAndDatabaseTests(ApiFixture fixture)
         }
 
         var all = string.Join('\n', bodies);
-        foreach (var canary in new[] { LeadPhone, LeadNotes, FollowUpNotes, AttemptNotes, originalName, responsibleName, "\"Lead\"", "Crm." })
+        // The Doctor holds the two clinical referral keys (Crm.Referrals.Create / .Read.Clinical); every other CRM key is absent.
+        foreach (var canary in new[] { LeadPhone, LeadNotes, FollowUpNotes, AttemptNotes, originalName, responsibleName, "\"Lead\"", "Crm.Leads",
+                     "Crm.FollowUps", "Crm.Responsibility", "Crm.Referrals.Read.Sales", "Crm.Referrals.UpdateStatus" })
         {
             Assert.DoesNotContain(canary, all);
         }
@@ -129,13 +131,16 @@ public sealed class CrmPrivacyAndDatabaseTests(ApiFixture fixture)
         Assert.DoesNotContain("/api/unassigned", salesDoc + managerDoc);
     }
 
-    [Fact] // SECURITY_DESIGN.md §4: CRM keys only for SALES_RECEPTION / MANAGER; every CRM route is a permission route
+    [Fact] // SECURITY_DESIGN.md §4: contact-bearing CRM keys only for SALES_RECEPTION / MANAGER; the Doctor holds only the clinical referral keys
     public async Task Crm_permission_mapping_and_routes()
     {
         Assert.Equal(
         [
             "Crm.FollowUps.Manage|MANAGER", "Crm.FollowUps.Manage|SALES_RECEPTION", "Crm.Leads.Manage|MANAGER",
             "Crm.Leads.Manage|SALES_RECEPTION", "Crm.Leads.ViewAll|MANAGER", "Crm.Leads.ViewOwn|SALES_RECEPTION",
+            "Crm.Referrals.Create|DOCTOR", "Crm.Referrals.Create|MANAGER", "Crm.Referrals.Read.Clinical|DOCTOR",
+            "Crm.Referrals.Read.Clinical|MANAGER", "Crm.Referrals.Read.Sales|MANAGER", "Crm.Referrals.Read.Sales|SALES_RECEPTION",
+            "Crm.Referrals.UpdateStatus|MANAGER", "Crm.Referrals.UpdateStatus|SALES_RECEPTION",
             "Crm.Responsibility.Assign|MANAGER",
         ], await fixture.Database.ColumnAsync("""
             SELECT rp.permission_key || '|' || r.name FROM identity.role_permissions rp JOIN identity.roles r ON r.id = rp.role_id
@@ -196,11 +201,11 @@ public sealed class CrmPrivacyAndDatabaseTests(ApiFixture fixture)
         Assert.Empty(await fixture.Database.ColumnAsync(
             "SELECT table_name FROM information_schema.role_table_grants WHERE grantee = 'clinic_app' AND table_schema IN ('crm','notifications') AND privilege_type IN ('DELETE','TRUNCATE')"));
 
-        // No Referral, Scheduling, Clinical, Finance or Payroll schema / table is created by this slice.
+        // Referrals live in crm (Task 3); no Task 4 schema or ledger table exists yet.
         Assert.Equal(0, await fixture.Database.ScalarAsync<long>(
-            "SELECT count(*) FROM pg_namespace WHERE nspname IN ('referrals','scheduling','clinical','finance','payroll','labs','orthodontics','expenses','attendance','feedback')"));
+            "SELECT count(*) FROM pg_namespace WHERE nspname IN ('referrals','payroll','labs','expenses','attendance')"));
         Assert.Equal(0, await fixture.Database.ScalarAsync<long>(
-            "SELECT count(*) FROM information_schema.tables WHERE table_name ~ '(referral|appointment|visit|charge|payment|installment|payroll|commission_item)'"));
+            "SELECT count(*) FROM information_schema.tables WHERE table_name ~ '(charge|payment|installment|payroll|commission_item)'"));
     }
 
     [Fact] // SECURITY_DESIGN.md §15 / API B5: the Worker reads only what J3 / J7 need and runs the planner under its role

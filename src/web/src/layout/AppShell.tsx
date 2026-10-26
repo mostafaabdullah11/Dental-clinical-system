@@ -1,4 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import type { UnreadCount } from '../api/types';
+import { useLoad } from '../lib/useLoad';
 import { roleLabels } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 
@@ -20,6 +22,14 @@ export function AppShell() {
         <nav className="sidebar" aria-label="القائمة الرئيسية">
           <NavLink to="/" end>الرئيسية</NavLink>
           {(can('Patients.Search.Clinical') || can('Patients.Search.Contact')) && <NavLink to="/patients">المرضى</NavLink>}
+          {can('Scheduling.Queue.ReadOwn') && <NavLink to="/queue">قائمة الانتظار</NavLink>}
+          {can('Scheduling.Availability.ViewOwn') && me?.role === 'DOCTOR' && <NavLink to="/my-schedule">جدولي</NavLink>}
+          {can('Scheduling.Appointments.View.All') && <NavLink to="/appointments">المواعيد</NavLink>}
+          {can('Scheduling.Availability.Publish') && <NavLink to="/availability">إتاحة الأطباء</NavLink>}
+          {can('Crm.Referrals.Read.Sales') && <NavLink to="/referrals">تحويلات الأطباء</NavLink>}
+          {can('Feedback.Queue.Manage') && <NavLink to="/feedback">طلبات التقييم</NavLink>}
+          {can('Feedback.Results.Read') && <NavLink to="/feedback-results">نتائج التقييمات</NavLink>}
+          {can('Notifications.Read.Own') && <NotificationsLink />}
           {(can('Crm.Leads.ViewOwn') || can('Crm.Leads.ViewAll')) && (
             <NavLink to="/leads">{can('Crm.Leads.ViewAll') ? 'كل العملاء المحتملين' : 'عملائي المحتملون'}</NavLink>
           )}
@@ -36,5 +46,15 @@ export function AppShell() {
         </main>
       </div>
     </div>
+  );
+}
+
+/** Inbox link with the unread count (Sales / Manager only; Doctors have no inbox in V1). */
+function NotificationsLink() {
+  const { data } = useLoad<UnreadCount>('/api/me/notifications/unread-count');
+  return (
+    <NavLink to="/notifications">
+      الإشعارات{data && data.count > 0 ? ` (${data.count})` : ''}
+    </NavLink>
   );
 }

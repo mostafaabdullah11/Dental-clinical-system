@@ -27,6 +27,9 @@ public static class RateLimitPolicies
 
     /// <summary>Patient search per user (DEFAULT 60/min, SECURITY_DESIGN.md §2).</summary>
     public const string PatientSearch = "patient-search";
+
+    /// <summary>Anonymous feedback form per client IP (FR-FDB-005); a second limit per token hash is applied in the endpoint.</summary>
+    public const string PublicFeedback = "public-feedback";
 }
 
 /// <summary>
