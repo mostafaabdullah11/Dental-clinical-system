@@ -1,13 +1,14 @@
 using Clinic.Modules.Crm.Contracts;
 using Clinic.Modules.Notifications.Contracts;
+using Clinic.Modules.Orthodontics.Contracts;
 using Clinic.Modules.Scheduling.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clinic.Worker;
 
 /// <summary>
-/// One recurring job of API B6. The identifier is the frozen job name; there is deliberately no J2 (Orthodontic
-/// installments, Task 4) and no J6 (feedback never expires, Q-FDB-1).
+/// One recurring job of API B6. The identifier is the frozen job name; there is deliberately no J6 (feedback never
+/// expires, Q-FDB-1).
 /// </summary>
 internal sealed record RecurringJob(string Id, TimeSpan Interval, long LockKey, Func<IServiceProvider, CancellationToken, Task<string>> RunAsync);
 
@@ -17,6 +18,8 @@ internal static class RecurringJobCatalog
     [
         new("J1-appointment-reminders", TimeSpan.FromMinutes(15), 7_301,
             async (sp, ct) => $"enqueued={await sp.GetRequiredService<IAppointmentReminderPlanner>().RunAsync(ct)}"),
+        new("J2-ortho-installments-due-tomorrow", TimeSpan.FromMinutes(15), 7_302,
+            async (sp, ct) => $"enqueued={await sp.GetRequiredService<IInstallmentReminderPlanner>().RunAsync(ct)}"),
         new("J3-follow-up-due", TimeSpan.FromMinutes(15), 7_303,
             async (sp, ct) => $"enqueued={await sp.GetRequiredService<IFollowUpDuePlanner>().RunAsync(ct)}"),
         new("J4-dispatcher", TimeSpan.FromMinutes(1), 7_304,

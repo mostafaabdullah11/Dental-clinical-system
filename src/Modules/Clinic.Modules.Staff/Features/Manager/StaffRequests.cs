@@ -14,7 +14,7 @@ public sealed record CommissionRevisionDto(
     int RevisionNumber, decimal CommissionPercentage, DateTimeOffset EffectiveFrom, Guid? SetByUserId, string? Reason);
 
 public sealed record ManagerAssistantDto(
-    Guid Id, string FullName, decimal CurrentSalary, decimal? OvertimeHourlyRate, bool IsActive, DateTimeOffset? DeactivatedAt);
+    Guid Id, string FullName, decimal CurrentSalary, decimal? OvertimeHourlyRate, bool IsActive, DateTimeOffset? DeactivatedAt, string Version);
 
 public sealed record StaffStatusDto(Guid Id, string Kind, bool IsActive, DateTimeOffset? DeactivatedAt);
 

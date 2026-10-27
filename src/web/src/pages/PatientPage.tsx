@@ -13,6 +13,7 @@ import { useAuth } from '../auth/AuthContext';
 import { ErrorBanner, Field } from '../components/Form';
 import { MedicalIntakeEditor, MedicalIntakeReadOnly } from '../components/MedicalIntake';
 import { DoctorClinicalSection, SalesPatientSection } from '../components/PatientTask3';
+import { PatientFinance } from '../components/PatientFinance';
 import { PatientTimeline } from '../components/PatientTimeline';
 import { formatAge } from '../lib/patients';
 
@@ -96,7 +97,7 @@ function ContactAudiencePatient({ id }: { id: string }) {
         {patient.originalSalesEmployee && <p>موظف المبيعات الأصلي: {patient.originalSalesEmployee.name}</p>}
         <p>الطبيب الحالي: {patient.currentDoctor?.name ?? 'لم يُعيَّن بعد'}</p>
         <p>تاريخ التسجيل: {new Date(patient.registeredAt).toLocaleString('ar-EG')}</p>
-        <p>رصيد المريض الدائن: {patient.patientCreditBalance ?? 'غير متاح بعد (وحدة المالية)'}</p>
+        <p>رصيد المريض الدائن: {patient.patientCreditBalance ?? '—'} ج.م</p>
         {isManager && <p>الشكوى الرئيسية: {chiefComplaint ?? '—'}</p>}
       </div>
       {can('Patients.Identity.Write') && <IdentityForm patient={patient} onSaved={setPatient} />}
@@ -104,6 +105,7 @@ function ContactAudiencePatient({ id }: { id: string }) {
       {can('Patients.MedicalHistory.EditIntake') && <MedicalIntakeEditor patientId={id} />}
       {can('Patients.Reassign') && <AssignmentPanel patientId={id} onChanged={() => void load()} />}
       <SalesPatientSection patientId={id} />
+      <PatientFinance patientId={id} />
       {isManager && <DoctorClinicalSection patientId={id} />}
       <PatientTimeline url={isManager ? `/api/manager/patients/${id}/timeline` : `/api/sales/patients/${id}/timeline`} />
     </section>

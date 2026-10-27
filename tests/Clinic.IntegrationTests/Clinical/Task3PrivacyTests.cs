@@ -1,3 +1,4 @@
+﻿using System.Text.Json;
 using System.Net;
 using Clinic.Api.Composition;
 using Clinic.IntegrationTests.Crm;
@@ -191,12 +192,19 @@ public sealed class Task3PrivacyTests(ApiFixture fixture)
         var salesDoc = await (await manager.GetAsync("/openapi/sales.json")).Content.ReadAsStringAsync();
         var publicDoc = await (await manager.GetAsync("/openapi/public.json")).Content.ReadAsStringAsync();
 
-        foreach (var token in new[] { "\"phone\"", "\"whatsapp\"", "\"salesNotes\"", "originalSalesEmployee", "\"doctorPercentage\"", "/api/sales/" })
+        foreach (var token in new[] { "\"phone\"", "\"whatsapp\"", "\"salesNotes\"", "originalSalesEmployee", "/api/sales/" })
         {
             Assert.DoesNotContain(token, doctorDoc);
         }
 
-        foreach (var token in new[] { "\"clinicalNotes\"", "\"medicationName\"", "\"lengthMm\"", "\"teeth\"", "\"doctorPercentageSnapshot\"", "/api/doctor/" })
+        // FR-FIN own work: the Doctor's own percentage appears only on the Doctor's own-work DTO (Finance.OwnWork.Read), never on a
+        // clinical or patient schema.
+        var doctorSchemas = JsonDocument.Parse(doctorDoc).RootElement.GetProperty("components").GetProperty("schemas").EnumerateObject()
+            .Where(s => s.Value.TryGetProperty("properties", out var props) && props.TryGetProperty("doctorPercentage", out _)).Select(s => s.Name).ToList();
+        Assert.Equal(["DoctorOwnWorkDto"], doctorSchemas);
+
+        foreach (var token in new[] { "\"clinicalNotes\"", "\"medicationName\"", "\"lengthMm\"", "\"teeth\"", "\"doctorPercentageSnapshot\"", "/api/doctor/",
+                     "\"doctorPercentage\"", "\"doctorShare\"", "\"clinicShare\"", "\"labAmount\"", "\"entitlement\"", "\"labPercentage\"" })
         {
             Assert.DoesNotContain(token, salesDoc);
         }

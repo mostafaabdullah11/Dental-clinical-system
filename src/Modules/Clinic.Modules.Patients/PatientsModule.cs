@@ -28,6 +28,7 @@ public static class PatientsModule
         services.AddScoped<PatientPresentation>();
         services.AddScoped<IPatientDirectory, PatientDirectory>();
         services.AddScoped<Clinic.Modules.Patients.Contracts.Contact.IPatientContactDirectory, PatientContactDirectory>();
+        services.AddScoped<Clinic.Modules.Patients.Contracts.Contact.IPatientAttributionSource, PatientAttributionSource>();
         services.AddScoped<Clinic.Modules.Notifications.Contracts.INotificationSubjectReader, NotificationSubjectReader>();
         services.AddScoped<PatientContactViews>();
 

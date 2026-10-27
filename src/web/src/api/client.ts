@@ -40,8 +40,11 @@ export interface Versioned<T> {
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH';
 
-async function send(method: Method, url: string, body?: unknown, ifMatch?: string | null): Promise<Response> {
+async function send(method: Method, url: string, body?: unknown, ifMatch?: string | null, idempotencyKey?: string): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' };
+  if (idempotencyKey) {
+    headers['Idempotency-Key'] = idempotencyKey;
+  }
   if (method !== 'GET') {
     if (!csrfToken) {
       await refreshCsrf();
@@ -97,8 +100,26 @@ export const api = {
     json<T>(await send('PUT', url, body, ifMatch)),
   patch: async <T>(url: string, body: unknown, ifMatch?: string | null): Promise<T> =>
     json<T>(await send('PATCH', url, body, ifMatch)),
+  /** Money commands (API A7): the caller keeps one key per user action so a retry never records twice. */
+  postKeyed: async <T>(url: string, body: unknown, idempotencyKey: string): Promise<T> =>
+    json<T>(await send('POST', url, body, null, idempotencyKey)),
+  /** Report exports (FR-REPORT-008): streamed CSV saved by the browser; nothing is kept in storage. */
+  download: async (url: string, fileName: string): Promise<void> => {
+    const response = await send('GET', url);
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  },
   putVersioned: async <T>(url: string, body: unknown, ifMatch: string | null): Promise<Versioned<T>> => {
     const response = await send('PUT', url, body, ifMatch);
     return { data: await json<T>(response), etag: response.headers.get('ETag') };
   },
 };
+
+/** A fresh Idempotency-Key for one user action. */
+export function newIdempotencyKey(): string {
+  return crypto.randomUUID();
+}

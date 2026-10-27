@@ -82,6 +82,38 @@ public static class PermissionKeys
 
     public const string NotificationsReadOwn = "Notifications.Read.Own";
 
+    // Task 4 — Finance, Labs, Orthodontics, Payroll, Expenses, Attendance, Reports (SECURITY_DESIGN.md §4)
+    public const string FinancePaymentsRecord = "Finance.Payments.Record";
+    public const string FinancePatientBalanceRead = "Finance.PatientBalance.Read";
+    public const string FinancePatientCreditApply = "Finance.PatientCredit.Apply";
+    public const string FinanceOwnWorkRead = "Finance.OwnWork.Read";
+    public const string FinancePaymentsCorrect = "Finance.Payments.Correct";
+    public const string FinanceChargesAdjust = "Finance.Charges.Adjust";
+    public const string FinanceLabPercentageConfigure = "Finance.LabPercentage.Configure";
+    public const string FinanceFixedLabRevise = "Finance.FixedLab.Revise";
+    public const string FinanceManagementRead = "Finance.Management.Read";
+    public const string OrthodonticsTermsEdit = "Orthodontics.Terms.Edit";
+    public const string OrthodonticsInstallmentsEdit = "Orthodontics.Installments.Edit";
+    public const string OrthodonticsInstallmentsApplyPayment = "Orthodontics.Installments.ApplyPayment";
+    public const string ExpensesCreateOperational = "Expenses.CreateOperational";
+    public const string ExpensesCategoriesReadAllowed = "Expenses.Categories.ReadAllowed";
+    public const string ExpensesReadAll = "Expenses.ReadAll";
+    public const string ExpensesManage = "Expenses.Manage";
+    public const string ExpenseCategoriesManage = "ExpenseCategories.Manage";
+    public const string StaffAssistantSalaryConfigure = "Staff.AssistantSalary.Configure";
+    public const string StaffAssistantOvertimeRateConfigure = "Staff.AssistantOvertimeRate.Configure";
+    public const string StaffAssistantOvertimeManage = "Staff.AssistantOvertime.Manage";
+    public const string StaffAttendanceManage = "Staff.Attendance.Manage";
+    public const string PayrollDoctorReadOwn = "Payroll.Doctor.ReadOwn";
+    public const string PayrollDoctorManageAll = "Payroll.Doctor.ManageAll";
+    public const string PayrollSalesReadOwn = "Payroll.Sales.ReadOwn";
+    public const string PayrollAssistantManageAll = "Payroll.Assistant.ManageAll";
+    public const string ReportsFinancial = "Reports.Financial";
+    public const string ReportsAttendance = "Reports.Attendance";
+    public const string ReportsExport = "Reports.Export";
+    public const string ReportsDashboardSales = "Reports.Dashboard.Sales";
+    public const string ReportsDashboardManager = "Reports.Dashboard.Manager";
+
     /// <summary>
     /// Keys that return or write C-Contact data. None of them may ever be mapped to DOCTOR
     /// (SECURITY_DESIGN.md §4 hard guard; checked by a migration test and a startup check).
@@ -106,5 +138,8 @@ public static class PermissionKeys
         "Scheduling.Arrival.Record",
         "Scheduling.Arrival.Void",
         "Feedback.Queue.Manage",
+        "Finance.PatientBalance.Read",
+        "Finance.Payments.Record",
+        "Reports.Dashboard.Sales",
     };
 }

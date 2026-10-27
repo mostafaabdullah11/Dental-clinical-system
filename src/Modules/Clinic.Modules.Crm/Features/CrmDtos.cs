@@ -50,7 +50,9 @@ public sealed record FollowUpDto(
     DateOnly? NextFollowUpDate,
     DateTimeOffset CreatedAt,
     string Version,
-    IReadOnlyList<ContactAttemptDto>? Attempts);
+    IReadOnlyList<ContactAttemptDto>? Attempts,
+    Guid? ChargeId = null,
+    Guid? InstallmentId = null);
 
 /// <summary>Lead input. SalesEmployeeId is accepted only from the Manager (Owner decision 2026-10-23); a Sales caller is the owner.</summary>
 [ContactData]
@@ -74,7 +76,7 @@ public sealed record LeadConvertedDto(Guid LeadId, Guid PatientId, string Patien
 [ContactData]
 public sealed record CreateFollowUpRequest(
     string FollowUpType, Guid? PatientId, Guid? LeadId, DateOnly? DueDate, string? Status, string? Notes, string? Result,
-    DateOnly? NextFollowUpDate, Guid? SalesEmployeeId);
+    DateOnly? NextFollowUpDate, Guid? SalesEmployeeId, Guid? ChargeId = null, Guid? InstallmentId = null);
 
 [ContactData]
 public sealed record UpdateFollowUpRequest(DateOnly? DueDate, string Status, string? Notes, string? Result, DateOnly? NextFollowUpDate);
@@ -140,6 +142,9 @@ internal sealed class CreateFollowUpRequestValidator : AbstractValidator<CreateF
     {
         RuleFor(x => x.FollowUpType).NotEmpty().Must(FollowUpTypes.All.Contains).WithErrorCode(FieldErrorCodes.Invalid);
         RuleFor(x => x.PatientId).NotNull().When(x => x.LeadId is null);
+        RuleFor(x => x.PatientId).NotNull().When(x => x.ChargeId is not null || x.InstallmentId is not null);
+        RuleFor(x => x.ChargeId).Null().When(x => x.LeadId is not null || x.InstallmentId is not null).WithErrorCode(FieldErrorCodes.Invalid);
+        RuleFor(x => x.InstallmentId).Null().When(x => x.LeadId is not null).WithErrorCode(FieldErrorCodes.Invalid);
         RuleFor(x => x.DueDate).NotNull();
         RuleFor(x => x.Status).FollowUpStatus();
         RuleFor(x => x.Notes).MaximumLength(2000);
@@ -204,7 +209,7 @@ internal sealed class CrmViews(DbContext db, IStaffDirectory staff, IPatientDire
         return items.Select(f => new FollowUpDto(f.Id, f.FollowUpType,
             f.PatientId is { } p ? patientRefs.GetValueOrDefault(p) : null, f.LeadId, Ref(f.AssignedSalesEmployeeId, names),
             f.DueDate, f.Status, FollowUpStatuses.IsOpen(f.Status), f.Notes, f.Result, f.NextFollowUpDate, f.CreatedAt,
-            ETags.Format(f.RowVersion), attempts is null ? null : attempts.GetValueOrDefault(f.Id) ?? [])).ToList();
+            ETags.Format(f.RowVersion), attempts is null ? null : attempts.GetValueOrDefault(f.Id) ?? [], f.ChargeId, f.InstallmentId)).ToList();
     }
 
     private static SalesEmployeeRef? Ref(Guid? id, IReadOnlyDictionary<Guid, string> names) =>

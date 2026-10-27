@@ -4,6 +4,9 @@
     <ProjectReference Include="..\..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
     <ProjectReference Include="..\Clinic.Modules.Clinical\Clinic.Modules.Clinical.csproj" />
     <ProjectReference Include="..\Clinic.Modules.Staff\Clinic.Modules.Staff.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Finance\Clinic.Modules.Finance.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Configuration\Clinic.Modules.Configuration.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Notifications\Clinic.Modules.Notifications.csproj" />
   </ItemGroup>
 
   <ItemGroup>

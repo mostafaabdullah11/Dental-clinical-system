@@ -106,6 +106,15 @@ internal sealed class ClinicalVisitAccess(DbContext db, CorrectionRecorder corre
          where c.Id == caseId
          select new CaseAccess(c.Id, c.PatientId, t.Code, c.LabModelSnapshot, c.StartedByDoctorId, c.Status)).SingleOrDefaultAsync(cancellationToken);
 
+    public async Task<IReadOnlyDictionary<Guid, string>> ProcedureNamesAsync(IEnumerable<Guid> caseIds, CancellationToken cancellationToken)
+    {
+        var ids = caseIds.Distinct().ToList();
+        return await (from c in db.Set<TreatmentCase>().AsNoTracking()
+                      join t in db.Set<ProcedureType>().AsNoTracking() on c.ProcedureTypeId equals t.Id
+                      where ids.Contains(c.Id)
+                      select new { c.Id, t.Name }).ToDictionaryAsync(x => x.Id, x => x.Name, cancellationToken);
+    }
+
     public Task<bool> DoctorHasPricedWorkOnCaseAsync(Guid doctorId, Guid caseId, CancellationToken cancellationToken) =>
         db.Set<CaseWorkItem>().AnyAsync(w => w.TreatmentCaseId == caseId && w.PerformingDoctorId == doctorId, cancellationToken);
 

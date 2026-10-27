@@ -6,6 +6,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Clinic.Modules.Staff;
 
@@ -19,6 +20,8 @@ public static class StaffModule
         services.AddScoped<IDoctorDirectory, DoctorDirectory>();
         services.AddScoped<ICurrentStaff, CurrentStaff>();
         services.AddStaffDirectoriesForJobs();
+        services.AddScoped<IStaffCompensationSource, StaffCompensationSource>();
+        services.TryAddScoped<IOvertimeUsageCheck, NoOvertimeUsage>();
         services.AddValidatorsFromAssemblyContaining<CreateDoctorRequestValidator>(includeInternalTypes: true);
         return services;
     }
@@ -31,7 +34,7 @@ public static class StaffModule
         return services;
     }
 
-    public static void ConfigureModel(ModelBuilder model) => StaffModel.Configure(model);
+    public static void ConfigureModel(ModelBuilder model, bool task4 = true) => StaffModel.Configure(model, task4);
 
     public static void MapManagerEndpoints(RouteGroupBuilder manager) => StaffEndpoints.Map(manager);
 }

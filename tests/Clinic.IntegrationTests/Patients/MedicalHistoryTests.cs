@@ -210,11 +210,13 @@ public sealed class MedicalHistoryTests(ApiFixture fixture)
         var me = await Http.JsonAsync(await sales.GetAsync("/api/me"));
         var keys = me.GetProperty("permissions").EnumerateArray().Select(p => p.GetString()!).ToList();
         Assert.Contains("Patients.MedicalHistory.EditIntake", keys);
-        // Only the approved operational keys: the whitelisted Sales summary and the pricing-line view / discount (no clinical content).
+        // Only the approved operational keys: the whitelisted Sales summary, the pricing-line view / discount and the patient-facing
+        // payment / balance / credit keys (no clinical content, no correction, adjustment or Manager finance key).
         Assert.DoesNotContain(keys, k => k is "Patients.Clinical.Read" or "Patients.Clinical.Write" or "Patients.Search.Clinical"
                                          || (k.StartsWith("Clinical.", StringComparison.Ordinal) && k != "Clinical.SalesSummary.Read")
                                          || k.StartsWith("Prescriptions.", StringComparison.Ordinal) || k.StartsWith("Staff.", StringComparison.Ordinal)
-                                         || (k.StartsWith("Finance.", StringComparison.Ordinal) && k is not "Finance.Discount.Set" and not "Finance.PricingLines.Read"));
+                                         || (k.StartsWith("Finance.", StringComparison.Ordinal) && k is not "Finance.Discount.Set" and not "Finance.PricingLines.Read" and not "Finance.Payments.Record"
+                                             and not "Finance.PatientBalance.Read" and not "Finance.PatientCredit.Apply"));
     }
 
     [Fact] // AC-MED-001 (d): one intake per patient; a row needs an existing patient; app cannot delete

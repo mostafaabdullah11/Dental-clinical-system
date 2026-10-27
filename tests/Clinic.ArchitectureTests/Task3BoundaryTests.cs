@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Clinic.Modules.Clinical;
 using Clinic.Modules.Feedback;
 using Clinic.Modules.Finance;
@@ -15,7 +15,7 @@ namespace Clinic.ArchitectureTests;
 /// <summary>
 /// ADR-001 / ADR-002 and SECURITY_DESIGN.md §7 for the Task 3 modules: dependencies point downwards only, Doctor-facing
 /// code never references a contact contract or a [ContactData] type, Sales-facing clinical code exposes no clinical
-/// content, entities stay internal, and no Task 4 financial processing exists yet.
+/// content and entities stay internal.
 /// </summary>
 public sealed class Task3BoundaryTests
 {
@@ -114,7 +114,7 @@ public sealed class Task3BoundaryTests
         }
     }
 
-    [Fact] // Owner decisions 2026-10-24: no feedback expiry; no Arrived / Waiting; no Task 4 financial processing; no float money
+    [Fact] // Owner decisions 2026-10-24: no feedback expiry; no Arrived / Waiting; no float money (Task 4 finance: Task4BoundaryTests)
     public void Frozen_negative_requirements()
     {
         var all = Task3.SelectMany(a => a.GetTypes()).Where(t => !t.Name.Contains('<')).ToList();
@@ -122,9 +122,6 @@ public sealed class Task3BoundaryTests
             p => p.Name.Contains("Expire", StringComparison.Ordinal) || p.Name.Contains("Expiry", StringComparison.Ordinal));
         var statuses = typeof(Clinic.Modules.Scheduling.Contracts.AppointmentStatuses).GetField("All")!.GetValue(null) as IReadOnlyList<string>;
         Assert.Equal(["Scheduled", "Confirmed", "InTreatment", "Completed", "Cancelled", "NoShow", "Rescheduled"], statuses);
-        Assert.DoesNotContain(all, t => t.Name.Contains("Installment", StringComparison.Ordinal) || t.Name.Contains("PatientCharge", StringComparison.Ordinal)
-                                        || t.Name.Contains("Payment", StringComparison.Ordinal) || t.Name.Contains("Distribution", StringComparison.Ordinal)
-                                        || t.Name.Contains("Commission", StringComparison.Ordinal) || t.Name.Contains("Payroll", StringComparison.Ordinal));
         var floats = all.SelectMany(t => t.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             .Where(p => (Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType) is var x && (x == typeof(float) || x == typeof(double)));
         Assert.Empty(floats);

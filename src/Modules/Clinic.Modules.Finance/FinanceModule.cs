@@ -1,5 +1,10 @@
 using Clinic.Modules.Clinical.Contracts;
+using Clinic.Modules.Finance.Contracts;
+using Clinic.Modules.Finance.Features;
+using Clinic.Modules.Finance.Infrastructure;
+using Clinic.Modules.Patients.Contracts;
 using Clinic.Modules.Staff.Contracts;
+using Clinic.SharedKernel.Events;
 using Clinic.SharedKernel.Errors;
 using Clinic.SharedKernel.Persistence;
 using Clinic.SharedKernel.Security;
@@ -11,11 +16,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Clinic.Modules.Finance;
 
-// Task 3 builds only the Doctor's initial Fixed Lab entry and its finalize precondition (Owner decision 2026-10-24).
-// Charges, payments, distributions and the Lab-First waterfall are Task 4 and are not implemented here.
+// Task 3 built the Doctor's initial Fixed Lab entry and its finalize precondition; Task 4 adds the ledger (Infrastructure/*).
 
 /// <summary>finance.fixed_lab_expenses (H, A+): one obligation per Fixed-model case; holds no amount.</summary>
 internal sealed class FixedLabExpense : IAuditable
@@ -56,15 +61,43 @@ internal sealed class SetInitialFixedLabRequestValidator : AbstractValidator<Set
 
 public static class FinanceModule
 {
+    /// <summary>The read-only ledger (Billed / Collected / Outstanding) the Worker needs for J2 and its J4 re-validation.</summary>
+    public static IServiceCollection AddFinanceLedgerForJobs(this IServiceCollection services)
+    {
+        services.TryAddScoped<FinanceLedger>();
+        services.TryAddScoped<IChargeLedger>(sp => sp.GetRequiredService<FinanceLedger>());
+        return services;
+    }
+
     public static IServiceCollection AddFinanceModule(this IServiceCollection services)
     {
         services.AddScoped<IVisitFinalizationGuard, FixedLabInitialGuard>();
+        services.AddFinanceLedgerForJobs();
+        services.Replace(ServiceDescriptor.Scoped<IPatientCreditBalanceReader>(sp => sp.GetRequiredService<FinanceLedger>()));
+        services.AddScoped<DistributionEngine>();
+        services.AddScoped<PaymentCommands>();
+        services.AddScoped<CorrectionCommands>();
+        services.AddScoped<FinanceViews>();
+        services.AddScoped<IOrthoChargeAdjustments, OrthoChargeAdjustments>();
+        services.TryAddScoped<IOrthoChargeRegistry, NoOrthoCharges>();
+        services.AddScoped<IPayrollLedgerSource, PayrollLedgerSource>();
+        services.AddScoped<IPatientTimelineSource, FinanceTimelineSource>();
+        services.AddScoped<IDomainEventHandler<VisitFinalized>, EstablishChargesOnVisitFinalized>();
         services.AddValidatorsFromAssemblyContaining<SetInitialFixedLabRequestValidator>(includeInternalTypes: true);
         return services;
     }
 
-    public static void ConfigureModel(ModelBuilder model)
+    public static void MapSalesEndpoints(RouteGroupBuilder sales) => SalesFinanceEndpoints.Map(sales);
+
+    public static void MapManagerEndpoints(RouteGroupBuilder manager) => ManagerFinanceEndpoints.Map(manager);
+
+    public static void ConfigureModel(ModelBuilder model, bool task4 = true)
     {
+        if (task4)
+        {
+            FinanceLedgerModel.Configure(model);
+        }
+
         model.Entity<FixedLabExpense>(e =>
         {
             e.ToTable("fixed_lab_expenses", "finance");
@@ -97,6 +130,7 @@ public static class FinanceModule
         doctor.MapPost("/fixed-lab/{caseId:guid}", SetInitialAsync).RequirePermission(PermissionKeys.FinanceFixedLabSetInitial)
             .Produces<FixedLabDto>(StatusCodes.Status201Created).Validate<SetInitialFixedLabRequest>();
         doctor.MapGet("/fixed-lab/{caseId:guid}", GetAsync).RequirePermission(PermissionKeys.FinanceFixedLabSetInitial).Produces<FixedLabDto>();
+        DoctorFinanceEndpoints.Map(doctor);
     }
 
     /// <summary>

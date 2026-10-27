@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Clinic.Api.Composition;
 using Clinic.Modules.Identity.Operator;
@@ -168,8 +168,12 @@ public sealed class ApiClient(HttpClient http) : IDisposable
     public Task<HttpResponseMessage> PutAsync(string url, object? body, string? ifMatch = null) =>
         SendAsync(HttpMethod.Put, url, body, ifMatch);
 
+    /// <summary>POST with an Idempotency-Key header (money commands, API A7); a fresh key unless one is given for a replay.</summary>
+    public Task<HttpResponseMessage> PostKeyedAsync(string url, object? body, Guid? key = null) =>
+        SendAsync(HttpMethod.Post, url, body, idempotencyKey: key ?? Guid.NewGuid());
+
     public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, object? body, string? ifMatch = null,
-        bool withCsrf = true)
+        bool withCsrf = true, Guid? idempotencyKey = null)
     {
         if (withCsrf && csrf is null)
         {
@@ -194,6 +198,11 @@ public sealed class ApiClient(HttpClient http) : IDisposable
         if (ifMatch is not null)
         {
             request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+        }
+
+        if (idempotencyKey is not null)
+        {
+            request.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey.Value.ToString());
         }
 
         return await http.SendAsync(request);

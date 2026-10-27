@@ -8,6 +8,7 @@ using Clinic.Modules.Audit;
 using Clinic.Modules.Clinical;
 using Clinic.Modules.Configuration;
 using Clinic.Modules.Crm;
+using Clinic.Modules.Expenses;
 using Clinic.Modules.Feedback;
 using Clinic.Modules.Feedback.Infrastructure;
 using Clinic.Modules.Finance;
@@ -16,7 +17,9 @@ using Clinic.Modules.Identity.Auth;
 using Clinic.Modules.Notifications;
 using Clinic.Modules.Orthodontics;
 using Clinic.Modules.Patients;
+using Clinic.Modules.Payroll;
 using Clinic.Modules.Prescriptions;
+using Clinic.Modules.Reports;
 using Clinic.Modules.Scheduling;
 using Clinic.Modules.Staff;
 using Clinic.Persistence;
@@ -80,6 +83,9 @@ internal static class ApiComposition
         services.AddOrthodonticsModule();
         services.AddFinanceModule();
         services.AddFeedbackModule();
+        services.AddPayrollModule();
+        services.AddExpensesModule();
+        services.AddReportsModule();
         services.AddValidatorsFromAssemblyContaining<CreateUserRequestValidator>(includeInternalTypes: true);
 
         services.Configure<JsonOptions>(o =>
@@ -153,6 +159,7 @@ internal static class ApiComposition
         OrthodonticsModule.MapDoctorEndpoints(doctor);
         FinanceModule.MapDoctorEndpoints(doctor);
         CrmModule.MapDoctorEndpoints(doctor);
+        PayrollModule.MapDoctorEndpoints(doctor);
 
         var sales = app.MapGroup("/api/sales").WithGroupName(ApiDocuments.Sales);
         PatientsModule.MapSalesEndpoints(sales);
@@ -160,6 +167,11 @@ internal static class ApiComposition
         SchedulingModule.MapSalesEndpoints(sales);
         ClinicalModule.MapSalesEndpoints(sales);
         FeedbackModule.MapSalesEndpoints(sales);
+        FinanceModule.MapSalesEndpoints(sales);
+        OrthodonticsModule.MapSalesEndpoints(sales);
+        PayrollModule.MapSalesEndpoints(sales);
+        ExpensesModule.MapSalesEndpoints(sales);
+        ReportsModule.MapSalesEndpoints(sales);
 
         var manager = app.MapGroup("/api/manager").WithGroupName(ApiDocuments.Manager);
         IdentityModule.MapManagerEndpoints(manager);
@@ -171,6 +183,11 @@ internal static class ApiComposition
         CrmModule.MapManagerEndpoints(manager);
         SchedulingModule.MapManagerEndpoints(manager);
         FeedbackModule.MapManagerEndpoints(manager);
+        FinanceModule.MapManagerEndpoints(manager);
+        OrthodonticsModule.MapManagerEndpoints(manager);
+        PayrollModule.MapManagerEndpoints(manager);
+        ExpensesModule.MapManagerEndpoints(manager);
+        ReportsModule.MapManagerEndpoints(manager);
 
         if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
         {

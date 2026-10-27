@@ -1,5 +1,12 @@
 using Clinic.Modules.Clinical.Contracts;
+using Clinic.Modules.Finance.Contracts;
+using Clinic.Modules.Notifications.Contracts;
+using Clinic.Modules.Orthodontics.Contracts;
+using Clinic.Modules.Orthodontics.Features;
+using Clinic.Modules.Orthodontics.Infrastructure;
+using Clinic.Modules.Patients.Contracts;
 using Clinic.Modules.Staff.Contracts;
+using Clinic.SharedKernel.Events;
 using Clinic.SharedKernel.Errors;
 using Clinic.SharedKernel.Persistence;
 using Clinic.SharedKernel.Security;
@@ -11,6 +18,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Clinic.Modules.Orthodontics;
 
@@ -23,7 +31,7 @@ internal sealed class OrthoCase : IAuditable
     public Guid TreatmentCaseId { get; init; }
     public required string Area { get; init; }
     public string? ApplianceType { get; init; }
-    public Guid? ChargeId { get; init; }
+    public Guid? ChargeId { get; set; }
 }
 
 /// <summary>
@@ -74,12 +82,40 @@ public static class OrthodonticsModule
     public static IServiceCollection AddOrthodonticsModule(this IServiceCollection services)
     {
         services.AddScoped<IVisitFinalizationGuard, OrthoDepositGuard>();
+        services.AddOrthodonticsJobs();
+        services.AddScoped<OrthoCommands>();
+        services.AddScoped<OrthoViews>();
+        services.Replace(ServiceDescriptor.Scoped<IOrthoChargeRegistry, OrthoChargeRegistry>());
+        services.AddScoped<Contracts.IInstallmentDirectory, InstallmentDirectory>();
+        services.AddScoped<Contracts.IOrthoReceivables, OrthoReceivables>();
+        services.AddScoped<IDomainEventHandler<ChargeEstablished>, GenerateScheduleOnChargeEstablished>();
+        services.AddScoped<IDomainEventHandler<AllocationsReversed>, UnapplyOnAllocationsReversed>();
+        services.AddScoped<IPatientTimelineSource, InstallmentTimelineSource>();
         services.AddValidatorsFromAssemblyContaining<CreateOrthoCaseRequestValidator>(includeInternalTypes: true);
         return services;
     }
 
-    public static void ConfigureModel(ModelBuilder model)
+    /// <summary>The Worker's share of Orthodontics: J2 and the J4 re-validation of installment reminders.</summary>
+    public static IServiceCollection AddOrthodonticsJobs(this IServiceCollection services)
     {
+        services.TryAddScoped<OrthoStateLoader>();
+        services.TryAddScoped<IInstallmentReminderPlanner, InstallmentReminderPlannerAdapter>();
+        services.TryAddScoped<InstallmentReminderPlanner>();
+        services.AddScoped<INotificationSourceValidator, InstallmentNotificationValidator>();
+        return services;
+    }
+
+    public static void MapSalesEndpoints(RouteGroupBuilder sales) => SalesOrthoEndpoints.Map(sales);
+
+    public static void MapManagerEndpoints(RouteGroupBuilder manager) => ManagerOrthoEndpoints.Map(manager);
+
+    public static void ConfigureModel(ModelBuilder model, bool task4 = true)
+    {
+        if (task4)
+        {
+            OrthoInstallmentModel.Configure(model);
+        }
+
         model.Entity<OrthoCase>(e =>
         {
             e.ToTable("ortho_cases", "orthodontics", t =>
@@ -114,7 +150,7 @@ public static class OrthodonticsModule
         doctor.MapPost("/visits/{visitId:guid}/orthodontic-cases", CreateAsync)
             .RequirePermission(PermissionKeys.OrthodonticsCasesCreate, PermissionKeys.OrthodonticsTermsSetInitial)
             .Produces<OrthoCaseDto>(StatusCodes.Status201Created).Validate<CreateOrthoCaseRequest>();
-        doctor.MapGet("/orthodontic-cases/{id:guid}", GetAsync).RequirePermission(PermissionKeys.OrthodonticsCasesRead).Produces<OrthoCaseDto>();
+        doctor.MapGet("/orthodontic-cases/{id:guid}", GetAsync).RequirePermission(PermissionKeys.OrthodonticsCasesRead).Produces<OrthoCaseView>();
     }
 
     /// <summary>
@@ -158,12 +194,8 @@ public static class OrthodonticsModule
         return Results.Created($"/api/doctor/orthodontic-cases/{work.TreatmentCaseId}", ToDto(orthoCase, terms));
     }
 
-    private static async Task<IResult> GetAsync(Guid id, DbContext db, CancellationToken ct)
-    {
-        var orthoCase = await db.Set<OrthoCase>().AsNoTracking().SingleOrDefaultAsync(o => o.TreatmentCaseId == id, ct) ?? throw AppException.NotFound();
-        var terms = await db.Set<OrthoTermRevision>().AsNoTracking().Where(t => t.OrthoCaseId == id).OrderByDescending(t => t.RevisionNumber).FirstAsync(ct);
-        return Results.Ok(ToDto(orthoCase, terms));
-    }
+    /// <summary>FR-ORT-005 Doctor read: schedule and payment status for any Doctor; no allocation detail, no shares.</summary>
+    private static async Task<IResult> GetAsync(Guid id, OrthoViews views, CancellationToken ct) => Results.Ok(await views.ViewAsync(id, withAllocations: false, ct));
 
     private static OrthoCaseDto ToDto(OrthoCase o, OrthoTermRevision t) =>
         new(o.TreatmentCaseId, o.Area, o.ApplianceType, new OrthoTermsDto(t.RevisionNumber, t.GrossTotalPrice, t.DepositAmount, t.NumberOfMonths, t.EnteredAt),
@@ -190,4 +222,9 @@ internal sealed class OrthoDepositGuard(DbContext db) : IVisitFinalizationGuard
 
         return null;
     }
+}
+
+internal sealed class InstallmentReminderPlannerAdapter(InstallmentReminderPlanner planner) : IInstallmentReminderPlanner
+{
+    public Task<int> RunAsync(CancellationToken cancellationToken) => planner.RunAsync(cancellationToken);
 }

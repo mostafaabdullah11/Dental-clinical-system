@@ -213,7 +213,7 @@ public sealed class SessionTests(ApiFixture fixture)
         Assert.Equal("Africa/Cairo", me.GetProperty("clinicTimezone").GetString());
         Assert.Equal("ar", me.GetProperty("locale").GetString());
         Assert.Equal("rtl", me.GetProperty("direction").GetString());
-        // Exactly the Doctor keys of the frozen matrix (Tasks 2-3); no contact-bearing key, no inbox, never EditIntake.
+        // Exactly the Doctor keys of the frozen matrix (Tasks 2-4); no contact-bearing key, no inbox, never EditIntake.
         Assert.Equal(JsonValueKind.Array, me.GetProperty("permissions").ValueKind);
         Assert.Equal(
             new[]
@@ -221,10 +221,10 @@ public sealed class SessionTests(ApiFixture fixture)
                 "Patients.Clinical.Read", "Patients.Clinical.Write", "Patients.MedicalHistory.Read", "Patients.Search.Clinical", "Patients.Timeline.Clinical",
                 "Clinical.Treatments.Write", "Clinical.Visits.CorrectFinalized", "Clinical.Visits.EnterConsultationFee", "Clinical.Visits.Finalize",
                 "Clinical.Visits.Read", "Clinical.Visits.Write", "Clinical.WorkItems.EnterPrice", "Crm.Referrals.Create", "Crm.Referrals.Read.Clinical",
-                "Finance.Discount.Set", "Finance.FixedLab.SetInitial", "Orthodontics.Cases.Create", "Orthodontics.Cases.Read",
+                "Finance.Discount.Set", "Finance.FixedLab.SetInitial", "Finance.OwnWork.Read", "Orthodontics.Cases.Create", "Orthodontics.Cases.Read",
                 "Orthodontics.Terms.SetInitial", "Prescriptions.CorrectFinalized", "Prescriptions.Print", "Prescriptions.Read", "Prescriptions.Write",
                 "Scheduling.Appointments.CreateFollowUp", "Scheduling.Appointments.RescheduleOwnFollowUp", "Scheduling.Appointments.View.Own",
-                "Scheduling.Availability.ViewOwn", "Scheduling.Queue.ReadOwn",
+                "Scheduling.Availability.ViewOwn", "Scheduling.Queue.ReadOwn", "Payroll.Doctor.ReadOwn",
             }.Order(StringComparer.Ordinal),
             me.GetProperty("permissions").EnumerateArray().Select(p => p.GetString()!).Order(StringComparer.Ordinal));
         Assert.DoesNotContain(me.GetProperty("permissions").EnumerateArray(), p => PermissionKeys.ContactBearing.Contains(p.GetString()!)

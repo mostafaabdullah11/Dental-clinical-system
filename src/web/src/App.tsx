@@ -25,6 +25,13 @@ import { RegisterPatientPage } from './pages/RegisterPatientPage';
 import { SalesPage } from './pages/SalesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { UsersPage } from './pages/UsersPage';
+import { AttendancePage } from './pages/AttendancePage';
+import { ExpensesPage, SalesExpensePage } from './pages/ExpensesPages';
+import { FinanceManagerPage } from './pages/FinanceManagerPage';
+import { MyPayrollPage, MyWorkPage, OutstandingPage } from './pages/OwnFinancePages';
+import { OrthoCasePage } from './pages/OrthoCasePage';
+import { PayrollPage } from './pages/PayrollPage';
+import { ReportsPage } from './pages/ReportsPage';
 
 export function App() {
   const { me, loading } = useAuth();
@@ -70,6 +77,16 @@ export function App() {
         <Route path="feedback" element={<FeedbackQueuePage />} />
         <Route path="feedback-results" element={<FeedbackResultsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="finance" element={<FinanceManagerPage />} />
+        <Route path="payroll" element={<PayrollPage />} />
+        <Route path="expenses" element={<ExpensesPage />} />
+        <Route path="expenses/new" element={<SalesExpensePage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="attendance" element={<AttendancePage />} />
+        <Route path="outstanding" element={<OutstandingPage />} />
+        <Route path="ortho/:id" element={<OrthoCasePage />} />
+        <Route path="my-work" element={<MyWorkPage />} />
+        <Route path="my-payroll" element={<MyPayrollPage />} />
         <Route path="change-password" element={<ChangePasswordPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

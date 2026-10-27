@@ -1,4 +1,4 @@
-using Clinic.IntegrationTests.Infrastructure;
+﻿using Clinic.IntegrationTests.Infrastructure;
 using Xunit;
 
 namespace Clinic.IntegrationTests.Clinical;
@@ -74,11 +74,13 @@ public sealed class Task3DatabaseTests(ApiFixture fixture)
                  {
                      "clinical.pricing_discount_entries.", "clinical.visit_corrections.", "clinical.treatment_records.", "clinical.procedure_types.",
                      "feedback.feedback_entries.", "finance.fixed_lab_expenses.", "finance.fixed_lab_revisions.", "orthodontics.ortho_term_revisions.",
-                     "orthodontics.ortho_cases.",
                  })
         {
             Assert.DoesNotContain(updatable, c => c.StartsWith(insertOnly, StringComparison.Ordinal));
         }
+
+        // Task 4: ortho_cases.charge_id is set once at Visit finalization; nothing else on the case is updatable.
+        Assert.Equal(["orthodontics.ortho_cases.charge_id"], updatable.Where(c => c.StartsWith("orthodontics.ortho_cases.", StringComparison.Ordinal)).ToList());
 
         foreach (var frozen in new[]
                  {
@@ -161,7 +163,7 @@ public sealed class Task3DatabaseTests(ApiFixture fixture)
             UNION ALL SELECT 'role_permissions=' || count(*) FROM identity.role_permissions UNION ALL SELECT 'patient_code=' || min(patient_code) FROM patients.patients
             """);
 
-        await database.MigrateAsync();
+        await database.MigrateAsync("Notifications_Task3Grants");
 
         var after = await database.ColumnAsync("""
             SELECT 'patients=' || count(*) FROM patients.patients UNION ALL SELECT 'follow_ups=' || count(*) FROM crm.follow_ups

@@ -8,6 +8,8 @@
     <ProjectReference Include="..\Clinic.Modules.Notifications\Clinic.Modules.Notifications.csproj" />
     <ProjectReference Include="..\Clinic.Modules.Patients\Clinic.Modules.Patients.csproj" />
     <ProjectReference Include="..\Clinic.Modules.Staff\Clinic.Modules.Staff.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Finance\Clinic.Modules.Finance.csproj" />
+    <ProjectReference Include="..\Clinic.Modules.Orthodontics\Clinic.Modules.Orthodontics.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,3 +1,5 @@
+using Clinic.Modules.Finance.Contracts;
+using Clinic.Modules.Orthodontics.Contracts;
 using Clinic.Modules.Crm.Contracts;
 using Clinic.Modules.Crm.Domain;
 using Clinic.Modules.Crm.Infrastructure;
@@ -170,9 +172,21 @@ internal static class SalesCrmEndpoints
     /// Sales owns what it creates; the Manager names the active Sales employee (Owner decision 2026-10-23).
     /// </summary>
     private static async Task<IResult> CreateFollowUpAsync(CreateFollowUpRequest body, CrmActor crm, OwnerResolver owners,
-        DbContext db, IPatientDirectory patients, CrmViews views, IClock clock, CancellationToken ct)
+        DbContext db, IPatientDirectory patients, IChargeLedger charges, IInstallmentDirectory installments, CrmViews views, IClock clock,
+        CancellationToken ct)
     {
         var owner = await owners.ResolveAsync(body.SalesEmployeeId, ct);
+        // Remaining Balance / Ortho Installment sources reference the patient's own charge / installment (FR-CRM-005).
+        if (body.ChargeId is { } chargeId && (await charges.BalanceAsync(chargeId, ct))?.PatientId != body.PatientId)
+        {
+            throw AppException.Validation("chargeId", FieldErrorCodes.Invalid);
+        }
+
+        if (body.InstallmentId is { } installmentId && await installments.PatientOfInstallmentAsync(installmentId, ct) != body.PatientId)
+        {
+            throw AppException.Validation("installmentId", FieldErrorCodes.Invalid);
+        }
+
         if (body.PatientId is { } patientId && (await patients.FindManyAsync([patientId], ct)).Count == 0)
         {
             throw AppException.Validation("patientId", FieldErrorCodes.Invalid);
@@ -194,6 +208,8 @@ internal static class SalesCrmEndpoints
             FollowUpType = body.FollowUpType,
             PatientId = body.PatientId,
             LeadId = body.LeadId,
+            ChargeId = body.ChargeId,
+            InstallmentId = body.InstallmentId,
             AssignedSalesEmployeeId = owner,
             DueDate = body.DueDate!.Value,
             Status = body.Status ?? FollowUpStatuses.New,

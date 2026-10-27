@@ -201,11 +201,17 @@ public sealed class CrmPrivacyAndDatabaseTests(ApiFixture fixture)
         Assert.Empty(await fixture.Database.ColumnAsync(
             "SELECT table_name FROM information_schema.role_table_grants WHERE grantee = 'clinic_app' AND table_schema IN ('crm','notifications') AND privilege_type IN ('DELETE','TRUNCATE')"));
 
-        // Referrals live in crm (Task 3); no Task 4 schema or ledger table exists yet.
+        // Referrals live in crm; there is no separate referrals, labs or attendance schema (attendance is staff, labs are finance).
         Assert.Equal(0, await fixture.Database.ScalarAsync<long>(
-            "SELECT count(*) FROM pg_namespace WHERE nspname IN ('referrals','payroll','labs','expenses','attendance')"));
-        Assert.Equal(0, await fixture.Database.ScalarAsync<long>(
-            "SELECT count(*) FROM information_schema.tables WHERE table_name ~ '(charge|payment|installment|payroll|commission_item)'"));
+            "SELECT count(*) FROM pg_namespace WHERE nspname IN ('referrals','labs','attendance','inventory')"));
+        // Task 4: the Remaining Balance / Ortho Installment source references are real FKs.
+        Assert.Equal(["charge_id>patient_charges", "installment_id>ortho_installments"], await fixture.Database.ColumnAsync("""
+            SELECT kcu.column_name || '>' || ccu.table_name FROM information_schema.table_constraints tc
+              JOIN information_schema.key_column_usage kcu ON kcu.constraint_name = tc.constraint_name AND kcu.table_schema = tc.table_schema
+              JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
+             WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'crm' AND tc.table_name = 'follow_ups'
+               AND kcu.column_name IN ('charge_id', 'installment_id') ORDER BY 1
+            """));
     }
 
     [Fact] // SECURITY_DESIGN.md §15 / API B5: the Worker reads only what J3 / J7 need and runs the planner under its role

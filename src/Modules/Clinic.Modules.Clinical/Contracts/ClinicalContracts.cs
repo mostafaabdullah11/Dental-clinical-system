@@ -83,7 +83,22 @@ public static class CorrectionRecordTypes
 /// the same transaction: Feedback creates the request now; Finance (Task 4) will establish the charges here. A failing
 /// subscriber rolls the whole finalization back.
 /// </summary>
-public sealed record VisitFinalized(Guid VisitId, Guid PatientId, Guid DoctorId, Guid? AppointmentId, DateTimeOffset FinalizedAt) : IDomainEvent;
+public sealed record VisitFinalized(Guid VisitId, Guid PatientId, Guid DoctorId, Guid? AppointmentId, DateTimeOffset FinalizedAt) : IDomainEvent
+{
+    /// <summary>
+    /// The priced lines of the Visit as data (FINANCE_DESIGN.md §3: Finance never calls Clinical). One Treatment line per
+    /// priced work item and one Consultation line when a fee was entered, each with the current discount snapshot.
+    /// </summary>
+    public IReadOnlyList<FinalizedChargeLine> Charges { get; init; } = [];
+
+    /// <summary>The user who finalized the Visit (audit / ortho schedule generation actor).</summary>
+    public Guid ActorUserId { get; init; }
+}
+
+/// <summary>Charge data passed to Finance at finalization: Doctor, percentage snapshot, lab model, price and discount snapshot.</summary>
+public sealed record FinalizedChargeLine(
+    string Kind, Guid? WorkItemId, Guid? TreatmentCaseId, Guid? PerformingDoctorId, decimal? DoctorPercentageSnapshot, string? LabModel,
+    string? ProcedureCode, decimal Price, decimal Discount, Guid? DiscountSetByUserId, string? DiscountSetByRole, DateTimeOffset? DiscountSetAt);
 
 /// <summary>One priced line of the Visit being finalized, with the current discount (the snapshot Finance will copy).</summary>
 public sealed record FinalizationLine(
@@ -128,6 +143,9 @@ public interface IClinicalVisitAccess
         CancellationToken cancellationToken);
 
     Task<decimal> CurrentDiscountAsync(Guid workItemId, CancellationToken cancellationToken);
+
+    /// <summary>Procedure display names of cases (Finance / Sales operational views: the name only, never clinical detail).</summary>
+    Task<IReadOnlyDictionary<Guid, string>> ProcedureNamesAsync(IEnumerable<Guid> caseIds, CancellationToken cancellationToken);
 }
 
 public sealed record ReferralSummaryItem(string ReferralType, string Reason, string? FollowUpInstructions, string Status, DateTimeOffset CreatedAt);

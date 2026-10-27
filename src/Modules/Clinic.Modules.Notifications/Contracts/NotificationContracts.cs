@@ -68,6 +68,7 @@ public static class NotificationEntityTypes
     public const string FollowUp = "FollowUp";
     public const string Referral = "Referral";
     public const string FeedbackRequest = "FeedbackRequest";
+    public const string OrthoInstallment = "OrthoInstallment";
 }
 
 /// <summary>

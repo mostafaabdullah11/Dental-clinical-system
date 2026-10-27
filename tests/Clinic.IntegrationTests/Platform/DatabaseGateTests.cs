@@ -12,14 +12,15 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
 {
     private static readonly string[] Schemas =
     [
-        "audit", "clinical", "configuration", "crm", "feedback", "finance", "identity", "infra", "notifications", "orthodontics", "patients", "prescriptions", "scheduling", "staff",
+        "audit", "clinical", "configuration", "crm", "expenses", "feedback", "finance", "identity", "infra", "notifications", "orthodontics", "patients", "payroll",
+        "prescriptions", "scheduling", "staff",
     ];
 
     private const string SchemaArray =
-        "ARRAY['audit','clinical','configuration','crm','feedback','finance','identity','infra','notifications','orthodontics','patients','prescriptions','scheduling','staff']";
+        "ARRAY['audit','clinical','configuration','crm','expenses','feedback','finance','identity','infra','notifications','orthodontics','patients','payroll','prescriptions','scheduling','staff']";
 
     [Fact]
-    public async Task Only_the_task3_schemas_exist()
+    public async Task Only_the_task4_schemas_exist()
     {
         var schemas = await fixture.Database.ColumnAsync(
             "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname NOT IN ('information_schema', 'public') ORDER BY nspname");
@@ -46,16 +47,24 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
             "prescriptions.prescription_items", "prescriptions.prescriptions", "scheduling.appointment_arrivals", "scheduling.appointments",
             "scheduling.availability_ranges", "scheduling.availability_weeks", "staff.assistants", "staff.doctors",
             "staff.sales_commission_rate_history", "staff.sales_employees",
+            // Task 4
+            "configuration.lab_percentage_history", "configuration.payment_methods", "staff.assistant_overtime_entries", "staff.attendance_records",
+            "finance.charge_adjustments", "finance.distribution_events", "finance.doctor_earnings", "finance.doctor_entitlements",
+            "finance.patient_charges", "finance.patient_credit_entries", "finance.payment_allocations", "finance.payment_corrections",
+            "finance.payments", "finance.revenue_distributions", "orthodontics.installment_payments", "orthodontics.ortho_installment_revisions",
+            "orthodontics.ortho_installments", "payroll.assistant_payroll_overtime_items", "payroll.assistant_payrolls", "payroll.doctor_payroll_adjustments",
+            "payroll.doctor_payroll_items", "payroll.doctor_payrolls", "payroll.sales_payroll_adjustments", "payroll.sales_payroll_commission_items",
+            "payroll.sales_payrolls", "expenses.clinic_expenses", "expenses.expense_categories",
         }.Order(StringComparer.Ordinal), tables.Order(StringComparer.Ordinal));
 
         var everything = await fixture.Database.ColumnAsync(
             "SELECT lower(table_schema || '.' || table_name) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog','information_schema')");
-        // Still out of scope after Task 3 (Task 4 finance / payroll / attendance tables, and everything V1 excludes).
+        // Everything V1 excludes (CLAUDE.md §5): no inventory, X-ray, branch, insurance, consent, printed invoice / receipt, daily
+        // closing, portal or expense attachment table.
         var forbidden = new[]
         {
-            "inventory", "stock", "warehouse", "xray", "x_ray", "imaging", "branch", "payroll", "installment", "attendance", "overtime",
-            "charge", "payment", "allocation", "credit", "distribution", "entitlement", "earning", "insurance", "consent", "invoice",
-            "receipt", "daily_clos", "portal", "clinic_expenses", "expense_categor", "lab_percentage",
+            "inventory", "stock", "warehouse", "xray", "x_ray", "imaging", "branch", "insurance", "consent", "invoice",
+            "receipt", "daily_clos", "closing", "portal", "attachment",
         };
         Assert.DoesNotContain(everything, t => forbidden.Any(f => t.Contains(f, StringComparison.Ordinal)));
     }
@@ -196,6 +205,54 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
             "finance.fixed_lab_expenses.patient_id>clinical.treatment_cases",
             "finance.fixed_lab_expenses.entered_by_doctor_id>staff.doctors",
             "finance.fixed_lab_revisions.entered_by_user_id>identity.users",
+            // Task 4
+            "configuration.lab_percentage_history.set_by_user_id>identity.users",
+            "staff.attendance_records.recorded_by_user_id>identity.users",
+            "staff.attendance_records.updated_by_user_id>identity.users",
+            "staff.assistant_overtime_entries.recorded_by_user_id>identity.users",
+            "staff.assistant_overtime_entries.voided_by_user_id>identity.users",
+            "finance.patient_charges.patient_id>patients.patients",
+            "finance.patient_charges.visit_id>clinical.visits",
+            "finance.patient_charges.patient_id>clinical.visits",
+            "finance.patient_charges.treatment_case_id>clinical.treatment_cases",
+            "finance.patient_charges.patient_id>clinical.treatment_cases",
+            "finance.patient_charges.case_work_item_id>clinical.case_work_items",
+            "finance.patient_charges.treatment_case_id>clinical.case_work_items",
+            "finance.patient_charges.performing_doctor_id>clinical.case_work_items",
+            "finance.patient_charges.performing_doctor_id>staff.doctors",
+            "finance.patient_charges.discount_set_by_user_id>identity.users",
+            "finance.charge_adjustments.created_by_user_id>identity.users",
+            "finance.payments.patient_id>patients.patients",
+            "finance.payments.payment_method_code>configuration.payment_methods",
+            "finance.payments.received_by_user_id>identity.users",
+            "finance.patient_credit_entries.created_by_user_id>identity.users",
+            "finance.payment_corrections.performed_by_user_id>identity.users",
+            "finance.distribution_events.created_by_user_id>identity.users",
+            "finance.doctor_entitlements.doctor_id>staff.doctors",
+            "finance.doctor_earnings.doctor_id>staff.doctors",
+            "orthodontics.ortho_cases.treatment_case_id>finance.patient_charges",
+            "orthodontics.ortho_cases.charge_id>finance.patient_charges",
+            "orthodontics.installment_payments.payment_allocation_id>finance.payment_allocations",
+            "orthodontics.installment_payments.charge_id>finance.payment_allocations",
+            "orthodontics.installment_payments.applied_by_user_id>identity.users",
+            "orthodontics.ortho_installment_revisions.entered_by_user_id>identity.users",
+            "crm.follow_ups.charge_id>finance.patient_charges",
+            "crm.follow_ups.installment_id>orthodontics.ortho_installments",
+            "payroll.doctor_payrolls.doctor_id>staff.doctors",
+            "payroll.doctor_payroll_items.doctor_earning_id>finance.doctor_earnings",
+            "payroll.doctor_payroll_adjustments.created_by_user_id>identity.users",
+            "payroll.sales_payrolls.sales_employee_id>staff.sales_employees",
+            "payroll.sales_payroll_commission_items.payment_allocation_id>finance.payment_allocations",
+            "payroll.sales_payroll_commission_items.patient_id>finance.payment_allocations",
+            "payroll.sales_payroll_commission_items.patient_id>patients.patients",
+            "payroll.sales_payroll_commission_items.rate_revision_id>staff.sales_commission_rate_history",
+            "payroll.sales_payroll_adjustments.created_by_user_id>identity.users",
+            "payroll.assistant_payrolls.assistant_id>staff.assistants",
+            "payroll.assistant_payrolls.base_pay_entered_by_user_id>identity.users",
+            "payroll.assistant_payroll_overtime_items.overtime_entry_id>staff.assistant_overtime_entries",
+            "expenses.clinic_expenses.payment_method_code>configuration.payment_methods",
+            "expenses.clinic_expenses.created_by_user_id>identity.users",
+            "expenses.clinic_expenses.updated_by_user_id>identity.users",
         };
         Assert.Equal(expected.Order(), actual.Select(a => a.Split('|')[0]).Order());
         Assert.All(actual, a => Assert.EndsWith("|NO ACTION", a));
@@ -276,7 +333,9 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
                 "Patients_Initial", "Xref_PatientsForeignKeys", "Identity_PatientsPermissions", "Notifications_Initial", "Crm_Initial",
                 "Xref_CrmForeignKeys", "Staff_SalesActivityUserId", "Identity_CrmPermissions", "Identity_TimelinePermissions",
                 "Crm_Referrals", "Scheduling_Initial", "Clinical_Initial", "Prescriptions_Initial", "Orthodontics_Initial",
-                "Finance_FixedLabInitial", "Feedback_Initial", "Xref_Task3ForeignKeys", "Identity_Task3Permissions", "Notifications_Task3Grants"],
+                "Finance_FixedLabInitial", "Feedback_Initial", "Xref_Task3ForeignKeys", "Identity_Task3Permissions", "Notifications_Task3Grants",
+                "Configuration_Task4", "Staff_Attendance", "Finance_Ledger", "Orthodontics_Installments", "Payroll_Initial", "Expenses_Initial",
+                "Xref_Task4ForeignKeys", "Identity_Task4Permissions"],
             applied.Select(m => m[15..]));
     }
 }

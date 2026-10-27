@@ -2,7 +2,9 @@ using Clinic.Modules.Audit;
 using Clinic.Modules.Configuration;
 using Clinic.Modules.Crm;
 using Clinic.Modules.Feedback;
+using Clinic.Modules.Finance;
 using Clinic.Modules.Notifications;
+using Clinic.Modules.Orthodontics;
 using Clinic.Modules.Scheduling;
 using Clinic.Modules.Staff;
 using Clinic.Persistence;
@@ -49,6 +51,8 @@ namespace Clinic.Worker
             services.AddSchedulingJobs();
             services.AddCrmJobs();
             services.AddFeedbackJobs();
+            services.AddFinanceLedgerForJobs();
+            services.AddOrthodonticsJobs();
             return services;
         }
     }

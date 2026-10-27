@@ -14,6 +14,8 @@
     <ProjectReference Include="..\Modules\Clinic.Modules.Orthodontics\Clinic.Modules.Orthodontics.csproj" />
     <ProjectReference Include="..\Modules\Clinic.Modules.Prescriptions\Clinic.Modules.Prescriptions.csproj" />
     <ProjectReference Include="..\Modules\Clinic.Modules.Scheduling\Clinic.Modules.Scheduling.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Payroll\Clinic.Modules.Payroll.csproj" />
+    <ProjectReference Include="..\Modules\Clinic.Modules.Expenses\Clinic.Modules.Expenses.csproj" />
   </ItemGroup>
 
   <ItemGroup>

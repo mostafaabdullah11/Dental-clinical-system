@@ -37,7 +37,8 @@ public sealed record PricingLineRef(string Kind, Guid Id)
 /// <summary>One pricing line as the pricing commands see it (price, current discount, owning Visit and Doctor).</summary>
 internal sealed record PricingLineState(
     PricingLineRef Ref, Guid VisitId, Guid PatientId, Guid DoctorId, string VisitStatus, decimal? Price, decimal Discount, int EntrySeq,
-    string? LastSetByRole, DateTimeOffset? LastSetAt, Guid? TreatmentCaseId, string? ProcedureCode, string? ProcedureName, string? LabModel);
+    string? LastSetByRole, DateTimeOffset? LastSetAt, Guid? TreatmentCaseId, string? ProcedureCode, string? ProcedureName, string? LabModel,
+    Guid? LastSetByUserId = null, Guid? PerformingDoctorId = null, decimal? PercentageSnapshot = null);
 
 /// <summary>
 /// Doctor-entered price of own work (FR-CLN-007 / -008 / -009), consultation fee checks, and the fixed-EGP discount entries
@@ -225,7 +226,8 @@ internal sealed class PricingService(DbContext db, IAuditWriter audit, ICurrentA
                              join c in db.Set<TreatmentCase>().AsNoTracking() on w.TreatmentCaseId equals c.Id
                              join t in db.Set<ProcedureType>().AsNoTracking() on c.ProcedureTypeId equals t.Id
                              where w.Id == line.Id
-                             select new { v.Id, v.PatientId, v.DoctorId, v.Status, w.EnteredPrice, CaseId = c.Id, t.Code, t.Name, c.LabModelSnapshot })
+                             select new { v.Id, v.PatientId, v.DoctorId, v.Status, w.EnteredPrice, CaseId = c.Id, t.Code, t.Name, c.LabModelSnapshot,
+                                 w.PerformingDoctorId, w.DoctorPercentageSnapshot })
                 .SingleOrDefaultAsync(ct);
             if (row is null)
             {
@@ -234,7 +236,8 @@ internal sealed class PricingService(DbContext db, IAuditWriter audit, ICurrentA
 
             var last = await LastEntryAsync(e => e.CaseWorkItemId == line.Id, ct);
             return new PricingLineState(line, row.Id, row.PatientId, row.DoctorId, row.Status, row.EnteredPrice, last?.Amount ?? 0m, last?.EntrySeq ?? 0,
-                last?.SetByRole, last?.SetAt, row.CaseId, row.Code, row.Name, row.LabModelSnapshot);
+                last?.SetByRole, last?.SetAt, row.CaseId, row.Code, row.Name, row.LabModelSnapshot, last?.SetByUserId, row.PerformingDoctorId,
+                row.DoctorPercentageSnapshot);
         }
 
         var visit = await db.Set<Visit>().AsNoTracking().SingleOrDefaultAsync(v => v.Id == line.Id, ct);
@@ -245,7 +248,7 @@ internal sealed class PricingService(DbContext db, IAuditWriter audit, ICurrentA
 
         var lastFee = await LastEntryAsync(e => e.ConsultationVisitId == line.Id, ct);
         return new PricingLineState(line, visit.Id, visit.PatientId, visit.DoctorId, visit.Status, visit.ConsultationFee, lastFee?.Amount ?? 0m,
-            lastFee?.EntrySeq ?? 0, lastFee?.SetByRole, lastFee?.SetAt, null, null, null, null);
+            lastFee?.EntrySeq ?? 0, lastFee?.SetByRole, lastFee?.SetAt, null, null, null, null, lastFee?.SetByUserId);
     }
 
     public async Task<decimal> CurrentConsultationDiscountAsync(Guid visitId, CancellationToken ct) =>

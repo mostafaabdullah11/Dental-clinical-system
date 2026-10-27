@@ -179,9 +179,10 @@ public sealed class LeadTests(ApiFixture fixture)
         var other = await CrmFixtures.CreateLeadAsync(sales2);
         Assert.Equal("23505", await fixture.Database.TryExecuteAsync($"UPDATE crm.leads SET converted_patient_id = '{patientId}' WHERE id = '{other.Id()}'", "clinic_app"));
 
-        // Conversion is not commission recognition: no finance / payroll objects exist at all in this slice.
+        // Conversion is not commission recognition: commission follows collected money only (no charge, payment or item).
         Assert.Equal(0, await fixture.Database.ScalarAsync<long>(
-            "SELECT count(*) FROM information_schema.tables WHERE table_name ILIKE '%commission_item%' OR table_name ILIKE '%ledger%'"));
+            $"SELECT count(*) FROM payroll.sales_payroll_commission_items WHERE patient_id = '{patientId}'"));
+        Assert.Equal(0, await fixture.Database.ScalarAsync<long>($"SELECT count(*) FROM finance.payments WHERE patient_id = '{patientId}'"));
     }
 
     [Fact] // AC-CRM-004 (b): two concurrent conversions create exactly one patient

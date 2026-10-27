@@ -283,6 +283,7 @@ public sealed class VisitFlowTests(ApiFixture fixture)
         Assert.Equal("InTreatment", (await Http.JsonAsync(await w.SalesClient.GetAsync($"/api/sales/appointments/{appointment.Id()}")))
             .GetProperty("status").GetString());
         Assert.Equal(0, await fixture.Database.ScalarAsync<long>($"SELECT count(*) FROM feedback.feedback_requests WHERE visit_id = '{visit.Id()}'"));
+        Assert.Equal(0, await fixture.Database.ScalarAsync<long>($"SELECT count(*) FROM finance.patient_charges WHERE visit_id = '{visit.Id()}'"));
 
         // The Doctor enters the initial Fixed Lab (store-only; 0 = explicit no lab cost); the Manager never can; then finalize succeeds.
         var caseId = implant.GetProperty("case").Id();
@@ -292,9 +293,11 @@ public sealed class VisitFlowTests(ApiFixture fixture)
             await w.DoctorClient.PostAsync($"/api/doctor/fixed-lab/{caseId}", new { amount = "600.00" }), HttpStatusCode.Conflict)).Code());
         await Task3.FinalizeAsync(w.DoctorClient, visit.Id());
 
-        // Store-only: no charge, installment or distribution table exists in Task 3.
+        // F4.1: the successful finalize establishes exactly one Fixed-lab Treatment charge of 9,000 (no payment, no distribution yet).
+        Assert.Equal(["Treatment|Fixed|9000.00"], await fixture.Database.ColumnAsync(
+            $"SELECT charge_kind || '|' || lab_model || '|' || final_price FROM finance.patient_charges WHERE visit_id = '{visit.Id()}'"));
         Assert.Equal(0, await fixture.Database.ScalarAsync<long>(
-            "SELECT count(*) FROM information_schema.tables WHERE table_name ~ '(patient_charges|payments|installments|distribution)'"));
+            $"SELECT count(*) FROM finance.payment_allocations a JOIN finance.patient_charges c ON c.id = a.charge_id WHERE c.visit_id = '{visit.Id()}'"));
     }
 
     [Fact] // AC-ORT-001 (Task 3 part): Doctor stores initial ortho terms; Deposit above Gross − Discount fails the finalize

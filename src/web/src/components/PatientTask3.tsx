@@ -65,7 +65,9 @@ export function DoctorClinicalSection({ patientId }: { patientId: string }) {
           <tbody>
             {cases.data?.map((c) => (
               <tr key={c.id}>
-                <td>{c.procedureName}</td>
+                <td>
+                  {c.procedureCode === 'Orthodontics' ? <Link to={`/ortho/${c.id}?patientId=${patientId}`}>{c.procedureName}</Link> : c.procedureName}
+                </td>
                 <td>{c.teeth.join('، ') || '—'}</td>
                 <td>{caseStatusLabels[c.status]}</td>
                 <td>{c.startedBy.name}</td>

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Clinic.Api.Composition;
 using Clinic.IntegrationTests.Crm;
@@ -187,7 +187,13 @@ public sealed class Task3AdditionalTests(ApiFixture fixture)
 
         var managerDoc = JsonDocument.Parse(await (await manager.GetAsync("/openapi/manager.json")).Content.ReadAsStringAsync());
         var managerPaths = managerDoc.RootElement.GetProperty("paths").EnumerateObject().Select(p => p.Name).ToList();
-        Assert.DoesNotContain(managerPaths, p => p.Contains("pricing", StringComparison.Ordinal) || p.Contains("fixed-lab", StringComparison.Ordinal)
-                                                  || p.Contains("orthodontic", StringComparison.Ordinal) || p.Contains("visits", StringComparison.Ordinal));
+        Assert.DoesNotContain(managerPaths, p => p.Contains("pricing", StringComparison.Ordinal) || p.Contains("visits", StringComparison.Ordinal));
+        // Task 4: the Manager only revises an existing Fixed Lab (PUT, never the initial POST) and edits established ortho terms /
+        // schedule; the initial Fixed Lab and initial ortho terms stay Doctor-only.
+        var paths = managerDoc.RootElement.GetProperty("paths");
+        Assert.Equal(["/api/manager/fixed-lab/{caseId}"], managerPaths.Where(p => p.Contains("fixed-lab", StringComparison.Ordinal)).ToList());
+        Assert.False(paths.GetProperty("/api/manager/fixed-lab/{caseId}").TryGetProperty("post", out _));
+        Assert.Equal(["/api/manager/orthodontic-cases/{id}/installments", "/api/manager/orthodontic-cases/{id}/terms"],
+            managerPaths.Where(p => p.StartsWith("/api/manager/orthodontic-cases", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList());
     }
 }

@@ -23,6 +23,7 @@ internal static class StaffEndpoints
         MapSalesEmployees(manager);
         MapAssistants(manager);
         MapActivation(manager);
+        AttendanceOvertimeEndpoints.Map(manager);
     }
 
     private static void MapDoctors(RouteGroupBuilder manager)
@@ -164,7 +165,7 @@ internal static class StaffEndpoints
         var assistants = manager.MapGroup("/staff/assistants").RequirePermission(PermissionKeys.StaffManage);
 
         assistants.MapGet("/", async (DbContext db, CancellationToken ct) =>
-            Results.Ok(await db.Set<Assistant>().AsNoTracking().OrderBy(a => a.FullName).Select(a => ToDto(a)).ToListAsync(ct)));
+            Results.Ok((await db.Set<Assistant>().AsNoTracking().OrderBy(a => a.FullName).ToListAsync(ct)).Select(ToDto).ToList()));
 
         assistants.MapGet("/{id:guid}", async (Guid id, HttpResponse response, DbContext db, CancellationToken ct) =>
         {
@@ -350,6 +351,5 @@ internal static class StaffEndpoints
     private static ManagerSalesEmployeeDto ToDto(SalesEmployee s, decimal rate, string? userName) =>
         new(s.Id, s.UserId, userName, s.FullName, s.BaseMonthlySalary, rate, s.IsActive, s.DeactivatedAt);
 
-    private static ManagerAssistantDto ToDto(Assistant a) =>
-        new(a.Id, a.FullName, a.CurrentSalary, a.OvertimeHourlyRate, a.IsActive, a.DeactivatedAt);
+    private static ManagerAssistantDto ToDto(Assistant a) => StaffViews.ToDto(a);
 }

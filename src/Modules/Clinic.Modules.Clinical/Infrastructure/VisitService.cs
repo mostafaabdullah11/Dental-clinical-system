@@ -124,7 +124,8 @@ internal sealed class VisitService(
         }
 
         ClinicalLocks.RequireIfMatch(ifMatch, visit.RowVersion);
-        var lines = (await pricing.LinesForVisitAsync(visitId, ct))
+        var states = await pricing.LinesForVisitAsync(visitId, ct);
+        var lines = states
             .Select(l => new FinalizationLine(l.Ref.Kind, l.Ref.Kind == PricingLineKinds.WorkItem ? l.Ref.Id : null, l.TreatmentCaseId, l.ProcedureCode,
                 l.LabModel, l.Price ?? 0m, l.Discount))
             .ToList();
@@ -155,7 +156,14 @@ internal sealed class VisitService(
             await appointments.CompleteForFinalizedVisitAsync(appointmentId, now, ct);
         }
 
-        await events.PublishAsync(new VisitFinalized(visit.Id, visit.PatientId, visit.DoctorId, visit.AppointmentId, now), ct);
+        var charges = states.Where(l => l.Price is > 0).Select(l => new FinalizedChargeLine(
+            l.Ref.Kind, l.Ref.Kind == PricingLineKinds.WorkItem ? l.Ref.Id : null, l.TreatmentCaseId, l.PerformingDoctorId, l.PercentageSnapshot, l.LabModel,
+            l.ProcedureCode, l.Price!.Value, l.Discount, l.Discount > 0 ? l.LastSetByUserId : null, l.Discount > 0 ? l.LastSetByRole : null,
+            l.Discount > 0 ? l.LastSetAt : null)).ToList();
+        await events.PublishAsync(new VisitFinalized(visit.Id, visit.PatientId, visit.DoctorId, visit.AppointmentId, now)
+        {
+            Charges = charges, ActorUserId = actor.UserId ?? Guid.Empty,
+        }, ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return visit;

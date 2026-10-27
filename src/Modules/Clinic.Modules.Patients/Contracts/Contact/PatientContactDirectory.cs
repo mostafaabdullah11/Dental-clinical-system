@@ -14,3 +14,12 @@ public interface IPatientContactDirectory
 {
     Task<IReadOnlyDictionary<Guid, PatientContactSummary>> FindManyAsync(IEnumerable<Guid> patientIds, CancellationToken cancellationToken);
 }
+
+/// <summary>Acquisition attribution of a patient (Q-PAT-1): WalkIn has no Original Sales Employee; Lead keeps it forever.</summary>
+public sealed record PatientAttribution(Guid PatientId, string PatientSource, Guid? OriginalSalesEmployeeId);
+
+/// <summary>Manager-side compensation input (Sales commission, FR-PAYROLL-001 / -004). Never used by Doctor code.</summary>
+public interface IPatientAttributionSource
+{
+    Task<IReadOnlyDictionary<Guid, PatientAttribution>> AttributionsAsync(IEnumerable<Guid> patientIds, CancellationToken cancellationToken);
+}

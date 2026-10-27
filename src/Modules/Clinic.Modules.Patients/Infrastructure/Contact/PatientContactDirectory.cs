@@ -14,3 +14,14 @@ internal sealed class PatientContactDirectory(DbContext db) : IPatientContactDir
             .ToDictionaryAsync(c => c.PatientId, cancellationToken);
     }
 }
+
+internal sealed class PatientAttributionSource(DbContext db) : IPatientAttributionSource
+{
+    public async Task<IReadOnlyDictionary<Guid, PatientAttribution>> AttributionsAsync(IEnumerable<Guid> patientIds, CancellationToken cancellationToken)
+    {
+        var ids = patientIds.Distinct().ToList();
+        return await db.Set<PatientContact>().AsNoTracking().Where(c => ids.Contains(c.PatientId))
+            .Select(c => new PatientAttribution(c.PatientId, c.PatientSource, c.OriginalSalesEmployeeId))
+            .ToDictionaryAsync(c => c.PatientId, cancellationToken);
+    }
+}

@@ -64,4 +64,7 @@ public static class ValidationExtensions
     /// <summary>Money / percentage scale rule: at most two decimals.</summary>
     public static IRuleBuilderOptions<TModel, decimal> TwoDecimals<TModel>(this IRuleBuilder<TModel, decimal> rule) =>
         rule.PrecisionScale(12, 2, ignoreTrailingZeros: true);
+
+    public static IRuleBuilderOptions<TModel, decimal?> TwoDecimals<TModel>(this IRuleBuilder<TModel, decimal?> rule) =>
+        rule.PrecisionScale(12, 2, ignoreTrailingZeros: true);
 }

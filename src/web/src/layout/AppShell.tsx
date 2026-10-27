@@ -38,6 +38,15 @@ export function AppShell() {
           {can('Staff.Manage') && <NavLink to="/doctors">الأطباء</NavLink>}
           {can('Staff.Manage') && <NavLink to="/sales">المبيعات / الاستقبال</NavLink>}
           {can('Staff.Manage') && <NavLink to="/assistants">المساعدون</NavLink>}
+          {can('Finance.OwnWork.Read') && <NavLink to="/my-work">أعمالي المالية</NavLink>}
+          {(can('Payroll.Doctor.ReadOwn') || can('Payroll.Sales.ReadOwn')) && <NavLink to="/my-payroll">راتبي</NavLink>}
+          {can('Finance.PatientBalance.Read') && me?.role !== 'MANAGER' && <NavLink to="/outstanding">الأرصدة المتبقية</NavLink>}
+          {can('Expenses.CreateOperational') && me?.role !== 'MANAGER' && <NavLink to="/expenses/new">تسجيل مصروف</NavLink>}
+          {can('Finance.Management.Read') && <NavLink to="/finance">المالية</NavLink>}
+          {can('Payroll.Doctor.ManageAll') && <NavLink to="/payroll">الرواتب</NavLink>}
+          {can('Expenses.ReadAll') && <NavLink to="/expenses">المصروفات</NavLink>}
+          {can('Staff.Attendance.Manage') && <NavLink to="/attendance">الحضور والوقت الإضافي</NavLink>}
+          {can('Reports.Financial') && <NavLink to="/reports">التقارير</NavLink>}
           {can('Configuration.Manage') && <NavLink to="/settings">الإعدادات</NavLink>}
           <NavLink to="/change-password">تغيير كلمة المرور</NavLink>
         </nav>

@@ -100,8 +100,8 @@ public sealed class SearchViewAndAssignmentTests(ApiFixture fixture)
 
         Assert.DoesNotContain("CANARY-CHIEF-COMPLAINT", body);
         Assert.DoesNotContain("chiefComplaint", body);
-        // Patient Credit comes from Finance (Task 4); until then it is reported as not available (null), never 0.
-        Assert.Equal(JsonValueKind.Null, view.GetProperty("patientCreditBalance").ValueKind);
+        // Patient Credit comes from the Finance ledger (Task 4): a new patient has exactly 0.00.
+        Assert.Equal("0.00", view.GetProperty("patientCreditBalance").GetString());
 
         Assert.Contains($"patients.contact.viewed|{sales.UserId}", await fixture.Database.ColumnAsync(
             $"SELECT action || '|' || user_id FROM audit.audit_log WHERE entity_id = '{created.Id}'"));

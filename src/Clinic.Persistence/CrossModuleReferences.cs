@@ -3,12 +3,16 @@ using Clinic.Modules.Clinical.Domain;
 using Clinic.Modules.Configuration.Domain;
 using Clinic.Modules.Crm.Domain;
 using Clinic.Modules.Feedback.Domain;
+using Clinic.Modules.Expenses;
 using Clinic.Modules.Finance;
+using Clinic.Modules.Finance.Domain;
 using Clinic.Modules.Identity.Domain;
 using Clinic.Modules.Notifications.Domain;
 using Clinic.Modules.Orthodontics;
+using Clinic.Modules.Orthodontics.Domain;
 using Clinic.Modules.Patients.Domain;
 using Clinic.Modules.Patients.Domain.Contact;
+using Clinic.Modules.Payroll.Domain;
 using Clinic.Modules.Prescriptions.Domain;
 using Clinic.Modules.Scheduling.Domain;
 using Clinic.Modules.Staff.Domain;
@@ -22,7 +26,7 @@ namespace Clinic.Persistence;
 /// </summary>
 internal static class CrossModuleReferences
 {
-    public static void Configure(ModelBuilder model, bool includePatients, bool includeCrm, bool includeTask3)
+    public static void Configure(ModelBuilder model, bool includePatients, bool includeCrm, bool includeTask3, bool includeTask4)
     {
         // audit → identity (nullable: unknown-user failed logins and operator actions have no user)
         model.Entity<AuditLogEntry>().HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.NoAction);
@@ -80,6 +84,78 @@ internal static class CrossModuleReferences
         }
 
         ConfigureTask3(model);
+        if (includeTask4)
+        {
+            ConfigureTask4(model);
+        }
+    }
+
+    /// <summary>
+    /// Task 4 tables: ledger, ortho installments, payroll, expenses, attendance / overtime, finance settings. The composite FKs whose
+    /// parent key has a nullable column (section 24 #12, #16, #18, #28) are declared in the Task 4 migration SQL.
+    /// </summary>
+    private static void ConfigureTask4(ModelBuilder model)
+    {
+        // configuration -> identity
+        model.Entity<LabPercentageRevision>().HasOne<User>().WithMany().HasForeignKey(x => x.SetByUserId).OnDelete(DeleteBehavior.NoAction);
+
+        // staff attendance / overtime -> identity
+        model.Entity<AttendanceRecord>().HasOne<User>().WithMany().HasForeignKey(x => x.RecordedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<AttendanceRecord>().HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<AssistantOvertimeEntry>().HasOne<User>().WithMany().HasForeignKey(x => x.RecordedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<AssistantOvertimeEntry>().HasOne<User>().WithMany().HasForeignKey(x => x.VoidedByUserId).OnDelete(DeleteBehavior.NoAction);
+
+        // finance ledger -> patients / clinical (section 24 #20, #21) / staff / configuration / identity
+        model.Entity<PatientCharge>().HasOne<Patient>().WithMany().HasForeignKey(x => x.PatientId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<PatientCharge>().HasOne<Visit>().WithMany().HasForeignKey(x => new { x.VisitId, x.PatientId }).HasPrincipalKey(v => new { v.Id, v.PatientId })
+            .OnDelete(DeleteBehavior.NoAction).HasConstraintName("fk_patient_charges_visits_visit_patient");
+        model.Entity<PatientCharge>().HasOne<TreatmentCase>().WithMany().HasForeignKey(x => new { x.TreatmentCaseId, x.PatientId })
+            .HasPrincipalKey(c => new { c.Id, c.PatientId }).OnDelete(DeleteBehavior.NoAction).HasConstraintName("fk_patient_charges_cases_case_patient");
+        model.Entity<PatientCharge>().HasOne<CaseWorkItem>().WithMany().HasForeignKey(x => new { x.CaseWorkItemId, x.TreatmentCaseId, x.PerformingDoctorId })
+            .HasPrincipalKey(w => new { w.Id, w.TreatmentCaseId, w.PerformingDoctorId }).OnDelete(DeleteBehavior.NoAction)
+            .HasConstraintName("fk_patient_charges_work_items_item_case_doctor");
+        model.Entity<PatientCharge>().HasOne<Doctor>().WithMany().HasForeignKey(x => x.PerformingDoctorId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<PatientCharge>().HasOne<User>().WithMany().HasForeignKey(x => x.DiscountSetByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<ChargeAdjustment>().HasOne<User>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<Payment>().HasOne<Patient>().WithMany().HasForeignKey(x => x.PatientId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<Payment>().HasOne<PaymentMethod>().WithMany().HasForeignKey(x => x.PaymentMethodCode).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<Payment>().HasOne<User>().WithMany().HasForeignKey(x => x.ReceivedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<PatientCreditEntry>().HasOne<User>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<PaymentCorrection>().HasOne<User>().WithMany().HasForeignKey(x => x.PerformedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<DistributionEvent>().HasOne<User>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<DoctorEntitlement>().HasOne<Doctor>().WithMany().HasForeignKey(x => x.DoctorId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<DoctorEarning>().HasOne<Doctor>().WithMany().HasForeignKey(x => x.DoctorId).OnDelete(DeleteBehavior.NoAction);
+
+        // orthodontics installments -> finance (section 24 #19) / identity
+        model.Entity<InstallmentPayment>().HasOne<PaymentAllocation>().WithMany().HasForeignKey(x => new { x.PaymentAllocationId, x.ChargeId })
+            .HasPrincipalKey(a => new { a.Id, a.ChargeId }).OnDelete(DeleteBehavior.NoAction)
+            .HasConstraintName("fk_installment_payments_allocations_allocation_charge");
+        model.Entity<InstallmentPayment>().HasOne<User>().WithMany().HasForeignKey(x => x.AppliedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<OrthoInstallmentRevision>().HasOne<User>().WithMany().HasForeignKey(x => x.EnteredByUserId).OnDelete(DeleteBehavior.NoAction);
+
+        // crm follow-up sources -> finance / orthodontics
+        model.Entity<FollowUp>().HasOne<PatientCharge>().WithMany().HasForeignKey(x => x.ChargeId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<FollowUp>().HasOne<OrthoInstallment>().WithMany().HasForeignKey(x => x.InstallmentId).OnDelete(DeleteBehavior.NoAction);
+
+        // payroll -> staff / finance (section 24 #31) / patients / identity
+        model.Entity<DoctorPayroll>().HasOne<Doctor>().WithMany().HasForeignKey(x => x.DoctorId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<DoctorPayrollItem>().HasOne<DoctorEarning>().WithMany().HasForeignKey(x => x.DoctorEarningId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<DoctorPayrollAdjustment>().HasOne<User>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<SalesPayroll>().HasOne<SalesEmployee>().WithMany().HasForeignKey(x => x.SalesEmployeeId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<SalesPayrollCommissionItem>().HasOne<PaymentAllocation>().WithMany().HasForeignKey(x => new { x.PaymentAllocationId, x.PatientId })
+            .HasPrincipalKey(a => new { a.Id, a.PatientId }).OnDelete(DeleteBehavior.NoAction)
+            .HasConstraintName("fk_sales_commission_items_allocations_allocation_patient");
+        model.Entity<SalesPayrollCommissionItem>().HasOne<Patient>().WithMany().HasForeignKey(x => x.PatientId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<SalesPayrollCommissionItem>().HasOne<SalesCommissionRate>().WithMany().HasForeignKey(x => x.RateRevisionId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<SalesPayrollAdjustment>().HasOne<User>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<AssistantPayroll>().HasOne<Assistant>().WithMany().HasForeignKey(x => x.AssistantId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<AssistantPayroll>().HasOne<User>().WithMany().HasForeignKey(x => x.BasePayEnteredByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<AssistantPayrollOvertimeItem>().HasOne<AssistantOvertimeEntry>().WithMany().HasForeignKey(x => x.OvertimeEntryId).OnDelete(DeleteBehavior.NoAction);
+
+        // expenses -> configuration / identity
+        model.Entity<ClinicExpense>().HasOne<PaymentMethod>().WithMany().HasForeignKey(x => x.PaymentMethodCode).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<ClinicExpense>().HasOne<User>().WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.NoAction);
+        model.Entity<ClinicExpense>().HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedByUserId).OnDelete(DeleteBehavior.NoAction);
     }
 
     /// <summary>Task 3 tables: scheduling, clinical, prescriptions, referrals, feedback, store-only Fixed Lab / Ortho inputs.</summary>
@@ -217,5 +293,60 @@ internal static class CrossModuleReferences
         ("finance.fixed_lab_expenses", "patient_id", "clinical.treatment_cases"),
         ("finance.fixed_lab_expenses", "entered_by_doctor_id", "staff.doctors"),
         ("finance.fixed_lab_revisions", "entered_by_user_id", "identity.users"),
+        ("configuration.lab_percentage_history", "set_by_user_id", "identity.users"),
+        ("staff.attendance_records", "recorded_by_user_id", "identity.users"),
+        ("staff.attendance_records", "updated_by_user_id", "identity.users"),
+        ("staff.assistant_overtime_entries", "recorded_by_user_id", "identity.users"),
+        ("staff.assistant_overtime_entries", "voided_by_user_id", "identity.users"),
+        ("finance.patient_charges", "patient_id", "patients.patients"),
+        ("finance.patient_charges", "visit_id", "clinical.visits"),
+        ("finance.patient_charges", "patient_id", "clinical.visits"),
+        ("finance.patient_charges", "treatment_case_id", "clinical.treatment_cases"),
+        ("finance.patient_charges", "patient_id", "clinical.treatment_cases"),
+        ("finance.patient_charges", "case_work_item_id", "clinical.case_work_items"),
+        ("finance.patient_charges", "treatment_case_id", "clinical.case_work_items"),
+        ("finance.patient_charges", "performing_doctor_id", "clinical.case_work_items"),
+        ("finance.patient_charges", "performing_doctor_id", "staff.doctors"),
+        ("finance.patient_charges", "discount_set_by_user_id", "identity.users"),
+        ("finance.charge_adjustments", "created_by_user_id", "identity.users"),
+        ("finance.payments", "patient_id", "patients.patients"),
+        ("finance.payments", "payment_method_code", "configuration.payment_methods"),
+        ("finance.payments", "received_by_user_id", "identity.users"),
+        ("finance.patient_credit_entries", "created_by_user_id", "identity.users"),
+        ("finance.payment_corrections", "performed_by_user_id", "identity.users"),
+        ("finance.distribution_events", "created_by_user_id", "identity.users"),
+        ("finance.doctor_entitlements", "doctor_id", "staff.doctors"),
+        ("finance.doctor_earnings", "doctor_id", "staff.doctors"),
+        ("orthodontics.installment_payments", "payment_allocation_id", "finance.payment_allocations"),
+        ("orthodontics.installment_payments", "charge_id", "finance.payment_allocations"),
+        ("orthodontics.installment_payments", "applied_by_user_id", "identity.users"),
+        ("orthodontics.ortho_installment_revisions", "entered_by_user_id", "identity.users"),
+        ("crm.follow_ups", "charge_id", "finance.patient_charges"),
+        ("crm.follow_ups", "installment_id", "orthodontics.ortho_installments"),
+        ("payroll.doctor_payrolls", "doctor_id", "staff.doctors"),
+        ("payroll.doctor_payroll_items", "doctor_earning_id", "finance.doctor_earnings"),
+        ("payroll.doctor_payroll_adjustments", "created_by_user_id", "identity.users"),
+        ("payroll.sales_payrolls", "sales_employee_id", "staff.sales_employees"),
+        ("payroll.sales_payroll_commission_items", "payment_allocation_id", "finance.payment_allocations"),
+        ("payroll.sales_payroll_commission_items", "patient_id", "finance.payment_allocations"),
+        ("payroll.sales_payroll_commission_items", "patient_id", "patients.patients"),
+        ("payroll.sales_payroll_commission_items", "rate_revision_id", "staff.sales_commission_rate_history"),
+        ("payroll.sales_payroll_adjustments", "created_by_user_id", "identity.users"),
+        ("payroll.assistant_payrolls", "assistant_id", "staff.assistants"),
+        ("payroll.assistant_payrolls", "base_pay_entered_by_user_id", "identity.users"),
+        ("payroll.assistant_payroll_overtime_items", "overtime_entry_id", "staff.assistant_overtime_entries"),
+        ("expenses.clinic_expenses", "payment_method_code", "configuration.payment_methods"),
+        ("expenses.clinic_expenses", "created_by_user_id", "identity.users"),
+        ("expenses.clinic_expenses", "updated_by_user_id", "identity.users"),
+        // declared in the Task 4 migration SQL (parent keys with a nullable column)
+        ("staff.assistant_overtime_entries", "attendance_record_id", "staff.attendance_records"),
+        ("staff.assistant_overtime_entries", "assistant_id", "staff.attendance_records"),
+        ("staff.assistant_overtime_entries", "work_date", "staff.attendance_records"),
+        ("orthodontics.ortho_cases", "treatment_case_id", "finance.patient_charges"),
+        ("orthodontics.ortho_cases", "charge_id", "finance.patient_charges"),
+        ("orthodontics.installment_payments", "ortho_case_id", "orthodontics.ortho_cases"),
+        ("orthodontics.installment_payments", "charge_id", "orthodontics.ortho_cases"),
+        ("finance.revenue_distributions", "charge_id", "finance.patient_charges"),
+        ("finance.revenue_distributions", "treatment_case_id", "finance.patient_charges"),
     ];
 }

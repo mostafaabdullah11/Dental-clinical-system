@@ -7,7 +7,7 @@ internal static class StaffModel
 {
     public const string Schema = "staff";
 
-    public static void Configure(ModelBuilder model)
+    public static void Configure(ModelBuilder model, bool task4)
     {
         model.Entity<Doctor>(e =>
         {
@@ -75,6 +75,59 @@ internal static class StaffModel
             e.Property(x => x.OvertimeHourlyRate).HasPrecision(12, 2);
             e.Property(x => x.RowVersion).IsRowVersion().HasColumnName("xmin").HasColumnType("xid");
             e.HasIndex(x => x.IsActive);
+        });
+
+        if (!task4)
+        {
+            return;
+        }
+
+        model.Entity<AttendanceRecord>(e =>
+        {
+            e.ToTable("attendance_records", Schema, t =>
+            {
+                t.HasCheckConstraint("ck_attendance_records_one_person", "(assistant_id IS NULL) <> (sales_employee_id IS NULL)");
+                t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')");
+                t.HasCheckConstraint("ck_attendance_records_times",
+                    "check_out_time IS NULL OR check_in_time IS NULL OR check_out_time > check_in_time");
+                t.HasCheckConstraint("ck_attendance_records_absent_no_times",
+                    "status <> 'Absent' OR (check_in_time IS NULL AND check_out_time IS NULL)");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Status).HasMaxLength(20);
+            e.Property(x => x.Notes).HasMaxLength(1000);
+            e.Property(x => x.RowVersion).IsRowVersion().HasColumnName("xmin").HasColumnType("xid");
+            e.HasOne<Assistant>().WithMany().HasForeignKey(x => x.AssistantId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<SalesEmployee>().WithMany().HasForeignKey(x => x.SalesEmployeeId).OnDelete(DeleteBehavior.NoAction);
+            // Declared parent key for the overtime composite FK (a Sales row, assistant_id NULL, can never be referenced).
+            e.HasIndex(x => new { x.Id, x.AssistantId, x.AttendanceDate }).IsUnique().HasDatabaseName("ux_attendance_records_id_assistant_date");
+            e.HasIndex(x => new { x.AssistantId, x.AttendanceDate }).IsUnique().HasFilter("assistant_id IS NOT NULL")
+                .HasDatabaseName("ix_attendance_records_assistant_day");
+            e.HasIndex(x => new { x.SalesEmployeeId, x.AttendanceDate }).IsUnique().HasFilter("sales_employee_id IS NOT NULL")
+                .HasDatabaseName("ix_attendance_records_sales_day");
+            e.HasIndex(x => x.AttendanceDate);
+        });
+
+        model.Entity<AssistantOvertimeEntry>(e =>
+        {
+            e.ToTable("assistant_overtime_entries", Schema, t =>
+            {
+                t.HasCheckConstraint("ck_assistant_overtime_entries_hours", "approved_hours > 0 AND approved_hours <= 24");
+                t.HasCheckConstraint("ck_assistant_overtime_entries_rate", "hourly_rate_snapshot >= 0");
+                t.HasCheckConstraint("ck_assistant_overtime_entries_amount", "amount = round(approved_hours * hourly_rate_snapshot, 2)");
+                t.HasCheckConstraint("ck_assistant_overtime_entries_void",
+                    "(voided_at IS NULL AND voided_by_user_id IS NULL AND void_reason IS NULL) OR (voided_at IS NOT NULL AND voided_by_user_id IS NOT NULL AND void_reason IS NOT NULL)");
+            });
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ApprovedHours).HasPrecision(5, 2);
+            e.Property(x => x.HourlyRateSnapshot).HasPrecision(12, 2);
+            e.Property(x => x.Amount).HasPrecision(12, 2);
+            e.Property(x => x.Notes).HasMaxLength(1000);
+            e.Property(x => x.VoidReason).HasMaxLength(500);
+            e.HasOne<Assistant>().WithMany().HasForeignKey(x => x.AssistantId).OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => new { x.AssistantId, x.WorkDate }).IsUnique().HasFilter("voided_at IS NULL")
+                .HasDatabaseName("ix_assistant_overtime_entries_live_day");
+            e.HasIndex(x => new { x.AssistantId, x.WorkDate });
         });
     }
 }

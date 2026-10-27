@@ -747,6 +747,83 @@ namespace Clinic.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Configuration.Domain.LabPercentageRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("EffectiveFrom")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effective_from");
+
+                    b.Property<decimal>("Percentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("percentage");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("SetByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("set_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lab_percentage_history");
+
+                    b.HasIndex("EffectiveFrom")
+                        .IsUnique()
+                        .HasDatabaseName("ix_lab_percentage_history_effective_from");
+
+                    b.HasIndex("SetByUserId")
+                        .HasDatabaseName("ix_lab_percentage_history_set_by_user_id");
+
+                    b.ToTable("lab_percentage_history", "configuration", t =>
+                        {
+                            t.HasCheckConstraint("ck_lab_percentage_history_percentage", "percentage BETWEEN 0 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Configuration.Domain.PaymentMethod", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("display_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Code")
+                        .HasName("pk_payment_methods");
+
+                    b.ToTable("payment_methods", "configuration", t =>
+                        {
+                            t.HasCheckConstraint("ck_payment_methods_code", "code IN ('Cash', 'Visa', 'InstaPay')");
+                        });
+                });
+
             modelBuilder.Entity("Clinic.Modules.Configuration.Domain.Setting", b =>
                 {
                     b.Property<string>("Key")
@@ -877,11 +954,17 @@ namespace Clinic.Persistence.Migrations
                     b.HasIndex("AppointmentId")
                         .HasDatabaseName("ix_follow_ups_appointment_id");
 
+                    b.HasIndex("ChargeId")
+                        .HasDatabaseName("ix_follow_ups_charge_id");
+
                     b.HasIndex("CreatedByUserId")
                         .HasDatabaseName("ix_follow_ups_created_by_user_id");
 
                     b.HasIndex("DueDate")
                         .HasDatabaseName("ix_follow_ups_due_date");
+
+                    b.HasIndex("InstallmentId")
+                        .HasDatabaseName("ix_follow_ups_installment_id");
 
                     b.HasIndex("LeadId")
                         .HasDatabaseName("ix_follow_ups_lead_id");
@@ -1221,6 +1304,142 @@ namespace Clinic.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Expenses.ClinicExpense", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedByRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("created_by_role");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateOnly>("ExpenseDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expense_date");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("PaidToVendor")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("paid_to_vendor");
+
+                    b.Property<string>("PaymentMethodCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("payment_method_code");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_clinic_expenses");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_clinic_expenses_created_by_user_id");
+
+                    b.HasIndex("ExpenseDate")
+                        .HasDatabaseName("ix_clinic_expenses_expense_date");
+
+                    b.HasIndex("PaymentMethodCode")
+                        .HasDatabaseName("ix_clinic_expenses_payment_method_code");
+
+                    b.HasIndex("UpdatedByUserId")
+                        .HasDatabaseName("ix_clinic_expenses_updated_by_user_id");
+
+                    b.HasIndex("CategoryId", "ExpenseDate")
+                        .HasDatabaseName("ix_clinic_expenses_category_id_expense_date");
+
+                    b.ToTable("clinic_expenses", "expenses", t =>
+                        {
+                            t.HasCheckConstraint("ck_clinic_expenses_amount", "amount > 0");
+
+                            t.HasCheckConstraint("ck_clinic_expenses_role", "created_by_role IN ('MANAGER', 'SALES_RECEPTION')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Expenses.ExpenseCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<bool>("SalesCanRecord")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sales_can_record");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id")
+                        .HasName("pk_expense_categories");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_expense_categories_name");
+
+                    b.ToTable("expense_categories", "expenses");
+                });
+
             modelBuilder.Entity("Clinic.Modules.Feedback.Domain.FeedbackEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1369,6 +1588,757 @@ namespace Clinic.Persistence.Migrations
                         .HasDatabaseName("ix_feedback_requests_visit_id_patient_id_doctor_id");
 
                     b.ToTable("feedback_requests", "feedback");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.ChargeAdjustment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AdjustmentKind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("adjustment_kind");
+
+                    b.Property<decimal>("AmountDelta")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount_delta");
+
+                    b.Property<Guid>("ChargeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("charge_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Id")
+                        .HasName("pk_charge_adjustments");
+
+                    b.HasIndex("ChargeId")
+                        .HasDatabaseName("ix_charge_adjustments_charge_id");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_charge_adjustments_created_by_user_id");
+
+                    b.ToTable("charge_adjustments", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_charge_adjustments_delta", "amount_delta <> 0 AND (adjustment_kind <> 'OrthoTermsChange' OR amount_delta > 0)");
+
+                            t.HasCheckConstraint("ck_charge_adjustments_kind", "adjustment_kind IN ('DiscountCorrection', 'PriceCorrection', 'OrthoTermsChange')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.DistributionEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("BasisAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("basis_amount");
+
+                    b.Property<Guid?>("CorrectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correction_id");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("EventKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("event_kind");
+
+                    b.Property<Guid?>("FixedLabRevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fixed_lab_revision_id");
+
+                    b.Property<Guid?>("IdempotencyKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_id");
+
+                    b.Property<DateTimeOffset>("RecognizedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recognized_at");
+
+                    b.Property<int>("RuleVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("rule_version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_distribution_events");
+
+                    b.HasIndex("CorrectionId")
+                        .HasDatabaseName("ix_distribution_events_correction_id");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_distribution_events_created_by_user_id");
+
+                    b.HasIndex("FixedLabRevisionId")
+                        .HasDatabaseName("ix_distribution_events_fixed_lab_revision_id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_distribution_events_idempotency_key");
+
+                    b.HasIndex("PaymentId")
+                        .HasDatabaseName("ix_distribution_events_payment_id");
+
+                    b.HasIndex("RecognizedAt")
+                        .HasDatabaseName("ix_distribution_events_recognized_at");
+
+                    b.ToTable("distribution_events", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_distribution_events_kind", "event_kind IN ('Collection', 'CreditApplication', 'Correction', 'FixedLabRevision')");
+
+                            t.HasCheckConstraint("ck_distribution_events_refs", "(event_kind IN ('Collection', 'CreditApplication') AND payment_id IS NOT NULL AND fixed_lab_revision_id IS NULL) OR (event_kind = 'Correction' AND correction_id IS NOT NULL AND fixed_lab_revision_id IS NULL) OR (event_kind = 'FixedLabRevision' AND fixed_lab_revision_id IS NOT NULL AND payment_id IS NULL AND correction_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.DoctorEarning", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("PaymentAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_allocation_id");
+
+                    b.Property<DateTimeOffset>("RecognizedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recognized_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_doctor_earnings");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_doctor_earnings_event_id");
+
+                    b.HasIndex("PaymentAllocationId")
+                        .HasDatabaseName("ix_doctor_earnings_payment_allocation_id");
+
+                    b.HasIndex("DoctorId", "RecognizedAt")
+                        .HasDatabaseName("ix_doctor_earnings_doctor_id_recognized_at");
+
+                    b.ToTable("doctor_earnings", "finance");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.DoctorEntitlement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("ChargeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("charge_id");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<decimal>("DoctorPercentageApplied")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("doctor_percentage_applied");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("PaymentAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_allocation_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_doctor_entitlements");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_doctor_entitlements_event_id");
+
+                    b.HasIndex("PaymentAllocationId")
+                        .HasDatabaseName("ix_doctor_entitlements_payment_allocation_id");
+
+                    b.HasIndex("DoctorId", "EventId")
+                        .HasDatabaseName("ix_doctor_entitlements_doctor_id_event_id");
+
+                    b.HasIndex("PaymentAllocationId", "ChargeId")
+                        .HasDatabaseName("ix_doctor_entitlements_payment_allocation_id_charge_id");
+
+                    b.ToTable("doctor_entitlements", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_doctor_entitlements_percentage", "doctor_percentage_applied BETWEEN 0 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PatientCharge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("CaseWorkItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("case_work_item_id");
+
+                    b.Property<string>("ChargeKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("charge_kind");
+
+                    b.Property<DateTimeOffset>("ChargedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("charged_at");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("discount_amount");
+
+                    b.Property<DateTimeOffset?>("DiscountSetAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("discount_set_at");
+
+                    b.Property<string>("DiscountSetByRole")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("discount_set_by_role");
+
+                    b.Property<Guid?>("DiscountSetByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("discount_set_by_user_id");
+
+                    b.Property<decimal?>("DoctorPercentageSnapshot")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("doctor_percentage_snapshot");
+
+                    b.Property<decimal>("FinalPrice")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("final_price")
+                        .HasComputedColumnSql("original_price - discount_amount", true);
+
+                    b.Property<string>("LabModel")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("lab_model");
+
+                    b.Property<decimal>("OriginalPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("original_price");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid?>("PerformingDoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("performing_doctor_id");
+
+                    b.Property<Guid?>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.Property<Guid>("VisitId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("visit_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_patient_charges");
+
+                    b.HasAlternateKey("Id", "ChargeKind")
+                        .HasName("ak_patient_charges_id_kind");
+
+                    b.HasAlternateKey("Id", "PatientId")
+                        .HasName("ak_patient_charges_id_patient");
+
+                    b.HasIndex("CaseWorkItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_patient_charges_work_item")
+                        .HasFilter("charge_kind = 'Treatment'");
+
+                    b.HasIndex("DiscountSetByUserId")
+                        .HasDatabaseName("ix_patient_charges_discount_set_by_user_id");
+
+                    b.HasIndex("TreatmentCaseId")
+                        .HasDatabaseName("ix_patient_charges_treatment_case_id");
+
+                    b.HasIndex("VisitId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_patient_charges_consultation_visit")
+                        .HasFilter("charge_kind = 'Consultation'");
+
+                    b.HasIndex("ChargeKind", "ChargedAt")
+                        .HasDatabaseName("ix_patient_charges_charge_kind_charged_at");
+
+                    b.HasIndex("PatientId", "ChargedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_patient_charges_patient_id_charged_at");
+
+                    b.HasIndex("PerformingDoctorId", "ChargedAt")
+                        .HasDatabaseName("ix_patient_charges_performing_doctor_id_charged_at");
+
+                    b.HasIndex("TreatmentCaseId", "PatientId")
+                        .HasDatabaseName("ix_patient_charges_treatment_case_id_patient_id");
+
+                    b.HasIndex("VisitId", "PatientId")
+                        .HasDatabaseName("ix_patient_charges_visit_id_patient_id");
+
+                    b.HasIndex("CaseWorkItemId", "TreatmentCaseId", "PerformingDoctorId")
+                        .HasDatabaseName("ix_patient_charges_case_work_item_id_treatment_case_id_perform");
+
+                    b.ToTable("patient_charges", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_patient_charges_amounts", "original_price > 0 AND discount_amount >= 0 AND discount_amount <= original_price");
+
+                            t.HasCheckConstraint("ck_patient_charges_discount_setter", "(discount_amount = 0 AND discount_set_by_user_id IS NULL AND discount_set_by_role IS NULL AND discount_set_at IS NULL) OR (discount_amount > 0 AND discount_set_by_user_id IS NOT NULL AND discount_set_by_role IN ('DOCTOR', 'SALES_RECEPTION', 'MANAGER') AND discount_set_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_patient_charges_kind", "charge_kind IN ('Treatment', 'Consultation')");
+
+                            t.HasCheckConstraint("ck_patient_charges_kind_columns", "(charge_kind = 'Treatment' AND treatment_case_id IS NOT NULL AND case_work_item_id IS NOT NULL AND performing_doctor_id IS NOT NULL AND doctor_percentage_snapshot IS NOT NULL AND lab_model IS NOT NULL) OR (charge_kind = 'Consultation' AND treatment_case_id IS NULL AND case_work_item_id IS NULL AND performing_doctor_id IS NULL AND doctor_percentage_snapshot IS NULL AND lab_model IS NULL)");
+
+                            t.HasCheckConstraint("ck_patient_charges_lab_model", "lab_model IS NULL OR lab_model IN ('General', 'Fixed')");
+
+                            t.HasCheckConstraint("ck_patient_charges_percentage", "doctor_percentage_snapshot IS NULL OR doctor_percentage_snapshot BETWEEN 0 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PatientCreditEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("CorrectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correction_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("EntryKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("entry_kind");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid?>("PaymentAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_allocation_id");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_patient_credit_entries");
+
+                    b.HasIndex("CorrectionId")
+                        .HasDatabaseName("ix_patient_credit_entries_correction_id");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_patient_credit_entries_created_by_user_id");
+
+                    b.HasIndex("PatientId", "CreatedAt")
+                        .HasDatabaseName("ix_patient_credit_entries_patient_id_created_at");
+
+                    b.HasIndex("PaymentAllocationId", "PaymentId")
+                        .HasDatabaseName("ix_patient_credit_entries_payment_allocation_id_payment_id");
+
+                    b.HasIndex("PaymentId", "PatientId")
+                        .HasDatabaseName("ix_patient_credit_entries_payment_id_patient_id");
+
+                    b.ToTable("patient_credit_entries", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_patient_credit_entries_allocation", "(entry_kind = 'AppliedToCharge') = (payment_allocation_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_patient_credit_entries_kind", "entry_kind IN ('FromPayment', 'FromReallocation', 'AppliedToCharge', 'Reversal', 'Refund')");
+
+                            t.HasCheckConstraint("ck_patient_credit_entries_sign", "(entry_kind IN ('FromPayment', 'FromReallocation') AND amount > 0) OR (entry_kind IN ('AppliedToCharge', 'Reversal', 'Refund') AND amount < 0)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("CorrectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correction_id");
+
+                    b.Property<Guid?>("IdempotencyKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTimeOffset>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<string>("PaymentMethodCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("payment_method_code");
+
+                    b.Property<Guid>("ReceivedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("received_by_user_id");
+
+                    b.Property<Guid?>("ReversesPaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reverses_payment_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payments");
+
+                    b.HasAlternateKey("Id", "PatientId")
+                        .HasName("ak_payments_id_patient");
+
+                    b.HasIndex("CorrectionId")
+                        .HasDatabaseName("ix_payments_correction_id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payments_idempotency_key");
+
+                    b.HasIndex("PaymentMethodCode")
+                        .HasDatabaseName("ix_payments_payment_method_code");
+
+                    b.HasIndex("ReceivedByUserId")
+                        .HasDatabaseName("ix_payments_received_by_user_id");
+
+                    b.HasIndex("ReversesPaymentId")
+                        .HasDatabaseName("ix_payments_reverses_payment_id");
+
+                    b.HasIndex("PaidAt", "PaymentMethodCode")
+                        .HasDatabaseName("ix_payments_paid_at_payment_method_code");
+
+                    b.HasIndex("PatientId", "PaidAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_payments_patient_id_paid_at");
+
+                    b.ToTable("payments", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_payments_kind", "kind IN ('Receipt', 'Reversal', 'Refund')");
+
+                            t.HasCheckConstraint("ck_payments_sign", "(kind = 'Receipt' AND amount > 0 AND reverses_payment_id IS NULL) OR (kind IN ('Reversal', 'Refund') AND amount < 0 AND reverses_payment_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PaymentAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AllocatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("allocated_at");
+
+                    b.Property<long>("AllocationSeq")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("allocation_seq");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("AllocationSeq"));
+
+                    b.Property<string>("AllocationSource")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("allocation_source");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("ChargeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("charge_id");
+
+                    b.Property<Guid?>("CorrectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correction_id");
+
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_id");
+
+                    b.Property<Guid?>("ReversesAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reverses_allocation_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payment_allocations");
+
+                    b.HasAlternateKey("Id", "ChargeId")
+                        .HasName("ak_payment_allocations_id_charge");
+
+                    b.HasAlternateKey("Id", "PatientId")
+                        .HasName("ak_payment_allocations_id_patient");
+
+                    b.HasAlternateKey("Id", "PaymentId")
+                        .HasName("ak_payment_allocations_id_payment");
+
+                    b.HasAlternateKey("Id", "ChargeId", "Amount")
+                        .HasName("ak_payment_allocations_id_charge_amount");
+
+                    b.HasIndex("AllocatedAt")
+                        .HasDatabaseName("ix_payment_allocations_allocated_at");
+
+                    b.HasIndex("AllocationSeq")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payment_allocations_allocation_seq");
+
+                    b.HasIndex("ChargeId")
+                        .HasDatabaseName("ix_payment_allocations_charge_id");
+
+                    b.HasIndex("CorrectionId")
+                        .HasDatabaseName("ix_payment_allocations_correction_id");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_payment_allocations_event_id");
+
+                    b.HasIndex("PaymentId")
+                        .HasDatabaseName("ix_payment_allocations_payment_id");
+
+                    b.HasIndex("ReversesAllocationId")
+                        .HasDatabaseName("ix_payment_allocations_reverses_allocation_id");
+
+                    b.HasIndex("ChargeId", "PatientId")
+                        .HasDatabaseName("ix_payment_allocations_charge_id_patient_id");
+
+                    b.HasIndex("PaymentId", "PatientId")
+                        .HasDatabaseName("ix_payment_allocations_payment_id_patient_id");
+
+                    b.ToTable("payment_allocations", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_payment_allocations_sign", "(reverses_allocation_id IS NOT NULL AND amount < 0) OR (reverses_allocation_id IS NULL AND amount > 0)");
+
+                            t.HasCheckConstraint("ck_payment_allocations_source", "allocation_source IN ('Payment', 'Credit')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PaymentCorrection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CorrectionKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("correction_kind");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("IdempotencyKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<Guid>("OriginalPaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("original_payment_id");
+
+                    b.Property<Guid>("PerformedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("performed_by_user_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payment_corrections");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payment_corrections_idempotency_key");
+
+                    b.HasIndex("OriginalPaymentId")
+                        .HasDatabaseName("ix_payment_corrections_original_payment_id");
+
+                    b.HasIndex("PerformedByUserId")
+                        .HasDatabaseName("ix_payment_corrections_performed_by_user_id");
+
+                    b.ToTable("payment_corrections", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_payment_corrections_kind", "correction_kind IN ('Reversal', 'Refund', 'Reallocation', 'Replacement')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.RevenueDistribution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChargeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("charge_id");
+
+                    b.Property<decimal>("ClinicShare")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("clinic_share");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<decimal>("LabAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("lab_amount");
+
+                    b.Property<string>("LabModel")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("lab_model");
+
+                    b.Property<decimal?>("LabPercentageApplied")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("lab_percentage_applied");
+
+                    b.Property<Guid>("PaymentAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_allocation_id");
+
+                    b.Property<int>("RuleVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("rule_version");
+
+                    b.Property<Guid>("TreatmentCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("treatment_case_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_revenue_distributions");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_revenue_distributions_created_at");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_revenue_distributions_event_id");
+
+                    b.HasIndex("PaymentAllocationId")
+                        .HasDatabaseName("ix_revenue_distributions_payment_allocation_id");
+
+                    b.HasIndex("PaymentAllocationId", "ChargeId")
+                        .HasDatabaseName("ix_revenue_distributions_payment_allocation_id_charge_id");
+
+                    b.ToTable("revenue_distributions", "finance", t =>
+                        {
+                            t.HasCheckConstraint("ck_revenue_distributions_lab_model", "lab_model IN ('General', 'Fixed')");
+
+                            t.HasCheckConstraint("ck_revenue_distributions_lab_pct", "(lab_model = 'General' AND lab_percentage_applied IS NOT NULL) OR (lab_model = 'Fixed' AND lab_percentage_applied IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Clinic.Modules.Finance.FixedLabExpense", b =>
@@ -1723,6 +2693,195 @@ namespace Clinic.Persistence.Migrations
                             t.HasCheckConstraint("ck_notifications_status", "status IN ('Pending', 'Sent', 'Failed', 'Cancelled')");
 
                             t.HasCheckConstraint("ck_notifications_type", "notification_type IN ('AppointmentTomorrow', 'ImplantFollowUpTomorrow', 'OrthodonticInstallmentDueTomorrow', 'NewDoctorReferral', 'OutstandingPaymentFollowUp', 'PendingFollowUp', 'FeedbackRequestPending')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.Domain.InstallmentPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AmountApplied")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount_applied");
+
+                    b.Property<DateTimeOffset>("AppliedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("applied_at");
+
+                    b.Property<Guid>("AppliedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("applied_by_user_id");
+
+                    b.Property<Guid>("ChargeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("charge_id");
+
+                    b.Property<Guid>("InstallmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("installment_id");
+
+                    b.Property<Guid>("OrthoCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ortho_case_id");
+
+                    b.Property<Guid>("PaymentAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_allocation_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_installment_payments");
+
+                    b.HasIndex("AppliedByUserId")
+                        .HasDatabaseName("ix_installment_payments_applied_by_user_id");
+
+                    b.HasIndex("InstallmentId")
+                        .HasDatabaseName("ix_installment_payments_installment_id");
+
+                    b.HasIndex("PaymentAllocationId")
+                        .HasDatabaseName("ix_installment_payments_payment_allocation_id");
+
+                    b.HasIndex("InstallmentId", "OrthoCaseId")
+                        .HasDatabaseName("ix_installment_payments_installment_id_ortho_case_id");
+
+                    b.HasIndex("InstallmentId", "PaymentAllocationId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_installment_payments_installment_allocation");
+
+                    b.HasIndex("PaymentAllocationId", "ChargeId")
+                        .HasDatabaseName("ix_installment_payments_payment_allocation_id_charge_id");
+
+                    b.ToTable("installment_payments", "orthodontics", t =>
+                        {
+                            t.HasCheckConstraint("ck_installment_payments_amount", "amount_applied <> 0");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.Domain.OrthoInstallment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("InstallmentNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("installment_number");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("origin");
+
+                    b.Property<Guid>("OrthoCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ortho_case_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ortho_installments");
+
+                    b.HasAlternateKey("Id", "OrthoCaseId")
+                        .HasName("ak_ortho_installments_id_case");
+
+                    b.HasIndex("OrthoCaseId", "InstallmentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ortho_installments_ortho_case_id_installment_number");
+
+                    b.ToTable("ortho_installments", "orthodontics", t =>
+                        {
+                            t.HasCheckConstraint("ck_ortho_installments_number", "installment_number >= 1");
+
+                            t.HasCheckConstraint("ck_ortho_installments_origin", "origin IN ('Generated', 'ManagerAdded', 'PriceChange')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.Domain.OrthoInstallmentRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AmountDue")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount_due");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<DateTimeOffset>("EnteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("entered_at");
+
+                    b.Property<string>("EnteredByRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("entered_by_role");
+
+                    b.Property<Guid>("EnteredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entered_by_user_id");
+
+                    b.Property<Guid>("InstallmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("installment_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("RevisionNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision_number");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ortho_installment_revisions");
+
+                    b.HasIndex("DueDate")
+                        .HasDatabaseName("ix_ortho_installment_revisions_due_date");
+
+                    b.HasIndex("EnteredByUserId")
+                        .HasDatabaseName("ix_ortho_installment_revisions_entered_by_user_id");
+
+                    b.HasIndex("InstallmentId", "RevisionNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ortho_installment_revisions_installment_id_revision_number");
+
+                    b.ToTable("ortho_installment_revisions", "orthodontics", t =>
+                        {
+                            t.HasCheckConstraint("ck_ortho_installment_revisions_active", "is_active OR amount_due = 0");
+
+                            t.HasCheckConstraint("ck_ortho_installment_revisions_amount", "amount_due >= 0");
+
+                            t.HasCheckConstraint("ck_ortho_installment_revisions_reason", "source = 'Generated' OR reason IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_ortho_installment_revisions_retire", "(source <> 'ManagerRetire' OR NOT is_active) AND (source <> 'ManagerEdit' OR is_active)");
+
+                            t.HasCheckConstraint("ck_ortho_installment_revisions_role", "(source = 'Generated' AND entered_by_role = 'DOCTOR') OR (source <> 'Generated' AND entered_by_role = 'MANAGER')");
+
+                            t.HasCheckConstraint("ck_ortho_installment_revisions_source", "(revision_number = 1 AND source IN ('Generated', 'ManagerAdded', 'PriceChange')) OR (revision_number > 1 AND source IN ('ManagerEdit', 'ManagerRetire'))");
                         });
                 });
 
@@ -2124,6 +3283,547 @@ namespace Clinic.Persistence.Migrations
                         .HasDatabaseName("ix_patient_doctor_assignments_patient_id_assigned_at");
 
                     b.ToTable("patient_doctor_assignments", "patients");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.AssistantPayroll", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AssistantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assistant_id");
+
+                    b.Property<decimal>("BasePayAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("base_pay_amount");
+
+                    b.Property<Guid?>("BasePayEnteredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("base_pay_entered_by_user_id");
+
+                    b.Property<string>("BasePaySource")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("base_pay_source");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("FinalAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("final_amount");
+
+                    b.Property<DateTimeOffset?>("FinalizedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finalized_at");
+
+                    b.Property<decimal>("OvertimeAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("overtime_amount");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("PartialPeriodReason")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("partial_period_reason");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<decimal>("SalarySnapshot")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("salary_snapshot");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_assistant_payrolls");
+
+                    b.HasIndex("BasePayEnteredByUserId")
+                        .HasDatabaseName("ix_assistant_payrolls_base_pay_entered_by_user_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_assistant_payrolls_status");
+
+                    b.HasIndex("AssistantId", "PeriodStart")
+                        .IsUnique()
+                        .HasDatabaseName("ix_assistant_payrolls_assistant_period");
+
+                    b.ToTable("assistant_payrolls", "payroll", t =>
+                        {
+                            t.HasCheckConstraint("ck_assistant_payrolls_amounts", "salary_snapshot > 0 AND base_pay_amount >= 0 AND overtime_amount >= 0");
+
+                            t.HasCheckConstraint("ck_assistant_payrolls_base_source", "(base_pay_source = 'SalarySnapshot' AND base_pay_amount = salary_snapshot AND partial_period_reason IS NULL) OR (base_pay_source = 'ManagerManual' AND partial_period_reason IS NOT NULL AND base_pay_entered_by_user_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_assistant_payrolls_final", "final_amount = base_pay_amount + overtime_amount");
+
+                            t.HasCheckConstraint("ck_assistant_payrolls_month", "period_start = date_trunc('month', period_start)::date AND period_end = (period_start + interval '1 month - 1 day')::date");
+
+                            t.HasCheckConstraint("ck_assistant_payrolls_reason", "partial_period_reason IS NULL OR partial_period_reason IN ('JoinedMidMonth', 'LeftMidMonth', 'SalaryChangedInMonth', 'OtherPartialMonth')");
+
+                            t.HasCheckConstraint("ck_assistant_payrolls_status", "status IN ('Draft', 'Finalized', 'Paid') AND (status = 'Draft') = (finalized_at IS NULL) AND (status = 'Paid') = (paid_at IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.AssistantPayrollOvertimeItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<decimal>("ApprovedHours")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("approved_hours");
+
+                    b.Property<Guid>("AssistantPayrollId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assistant_payroll_id");
+
+                    b.Property<decimal>("HourlyRateSnapshot")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("hourly_rate_snapshot");
+
+                    b.Property<Guid>("OvertimeEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("overtime_entry_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_assistant_payroll_overtime_items");
+
+                    b.HasIndex("AssistantPayrollId")
+                        .HasDatabaseName("ix_assistant_payroll_overtime_items_assistant_payroll_id");
+
+                    b.HasIndex("OvertimeEntryId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_assistant_payroll_overtime_items_entry");
+
+                    b.ToTable("assistant_payroll_overtime_items", "payroll", t =>
+                        {
+                            t.HasCheckConstraint("ck_assistant_payroll_overtime_items_values", "approved_hours > 0 AND hourly_rate_snapshot >= 0 AND amount >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.DoctorPayroll", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AdjustmentsTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("adjustments_total");
+
+                    b.Property<decimal>("ClinicShareTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("clinic_share_total");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_id");
+
+                    b.Property<decimal>("DoctorShareTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("doctor_share_total");
+
+                    b.Property<decimal>("FinalAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("final_amount");
+
+                    b.Property<DateTimeOffset?>("FinalizedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finalized_at");
+
+                    b.Property<decimal>("LabTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("lab_total");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<decimal>("RevenueTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("revenue_total");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_doctor_payrolls");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_doctor_payrolls_status");
+
+                    b.HasIndex("DoctorId", "PeriodStart")
+                        .IsUnique()
+                        .HasDatabaseName("ix_doctor_payrolls_doctor_period");
+
+                    b.ToTable("doctor_payrolls", "payroll", t =>
+                        {
+                            t.HasCheckConstraint("ck_doctor_payrolls_final", "final_amount = doctor_share_total + adjustments_total");
+
+                            t.HasCheckConstraint("ck_doctor_payrolls_month", "period_start = date_trunc('month', period_start)::date AND period_end = (period_start + interval '1 month - 1 day')::date");
+
+                            t.HasCheckConstraint("ck_doctor_payrolls_status", "status IN ('Draft', 'Finalized', 'Paid') AND (status = 'Draft') = (finalized_at IS NULL) AND (status = 'Paid') = (paid_at IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.DoctorPayrollAdjustment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<Guid>("DoctorPayrollId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_payroll_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Id")
+                        .HasName("pk_doctor_payroll_adjustments");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_doctor_payroll_adjustments_created_by_user_id");
+
+                    b.HasIndex("DoctorPayrollId")
+                        .HasDatabaseName("ix_doctor_payroll_adjustments_doctor_payroll_id");
+
+                    b.ToTable("doctor_payroll_adjustments", "payroll", t =>
+                        {
+                            t.HasCheckConstraint("ck_doctor_payroll_adjustments_amount", "amount <> 0");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.DoctorPayrollItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("DoctorEarningId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_earning_id");
+
+                    b.Property<Guid>("DoctorPayrollId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("doctor_payroll_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_doctor_payroll_items");
+
+                    b.HasIndex("DoctorEarningId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_doctor_payroll_items_earning");
+
+                    b.HasIndex("DoctorPayrollId")
+                        .HasDatabaseName("ix_doctor_payroll_items_doctor_payroll_id");
+
+                    b.ToTable("doctor_payroll_items", "payroll");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.SalesPayroll", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("BaseSalarySnapshot")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("base_salary_snapshot");
+
+                    b.Property<decimal>("BonusTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("bonus_total");
+
+                    b.Property<decimal>("CommissionTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("commission_total");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("DeductionsTotal")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("deductions_total");
+
+                    b.Property<DateTimeOffset?>("FinalizedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finalized_at");
+
+                    b.Property<decimal>("NetSalary")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("net_salary")
+                        .HasComputedColumnSql("base_salary_snapshot + commission_total + bonus_total - deductions_total", true);
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid>("SalesEmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_employee_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sales_payrolls");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_sales_payrolls_status");
+
+                    b.HasIndex("SalesEmployeeId", "PeriodStart")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sales_payrolls_employee_period");
+
+                    b.ToTable("sales_payrolls", "payroll", t =>
+                        {
+                            t.HasCheckConstraint("ck_sales_payrolls_amounts", "base_salary_snapshot >= 0 AND bonus_total >= 0 AND deductions_total >= 0");
+
+                            t.HasCheckConstraint("ck_sales_payrolls_month", "period_start = date_trunc('month', period_start)::date AND period_end = (period_start + interval '1 month - 1 day')::date");
+
+                            t.HasCheckConstraint("ck_sales_payrolls_status", "status IN ('Draft', 'Finalized', 'Paid') AND (status = 'Draft') = (finalized_at IS NULL) AND (status = 'Paid') = (paid_at IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.SalesPayrollAdjustment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("SalesPayrollId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_payroll_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sales_payroll_adjustments");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_sales_payroll_adjustments_created_by_user_id");
+
+                    b.HasIndex("SalesPayrollId")
+                        .HasDatabaseName("ix_sales_payroll_adjustments_sales_payroll_id");
+
+                    b.ToTable("sales_payroll_adjustments", "payroll", t =>
+                        {
+                            t.HasCheckConstraint("ck_sales_payroll_adjustments_amount", "amount > 0");
+
+                            t.HasCheckConstraint("ck_sales_payroll_adjustments_kind", "kind IN ('Bonus', 'Deduction')");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.SalesPayrollCommissionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AllocatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("allocated_at");
+
+                    b.Property<decimal>("BaseAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("base_amount");
+
+                    b.Property<string>("BasisDescription")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("basis_description");
+
+                    b.Property<decimal>("CommissionAmount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("commission_amount");
+
+                    b.Property<decimal>("CommissionPercentageApplied")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("commission_percentage_applied");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("patient_id");
+
+                    b.Property<Guid>("PaymentAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_allocation_id");
+
+                    b.Property<Guid>("RateRevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rate_revision_id");
+
+                    b.Property<Guid>("SalesPayrollId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_payroll_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sales_payroll_commission_items");
+
+                    b.HasIndex("PatientId")
+                        .HasDatabaseName("ix_sales_payroll_commission_items_patient_id");
+
+                    b.HasIndex("PaymentAllocationId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sales_payroll_commission_items_allocation");
+
+                    b.HasIndex("RateRevisionId")
+                        .HasDatabaseName("ix_sales_payroll_commission_items_rate_revision_id");
+
+                    b.HasIndex("SalesPayrollId")
+                        .HasDatabaseName("ix_sales_payroll_commission_items_sales_payroll_id");
+
+                    b.HasIndex("PaymentAllocationId", "PatientId")
+                        .HasDatabaseName("ix_sales_payroll_commission_items_payment_allocation_id_patien");
+
+                    b.ToTable("sales_payroll_commission_items", "payroll", t =>
+                        {
+                            t.HasCheckConstraint("ck_sales_payroll_commission_items_amount", "commission_amount = round(base_amount * commission_percentage_applied / 100, 2)");
+
+                            t.HasCheckConstraint("ck_sales_payroll_commission_items_pct", "commission_percentage_applied BETWEEN 0 AND 100");
+                        });
                 });
 
             modelBuilder.Entity("Clinic.Modules.Prescriptions.Domain.Prescription", b =>
@@ -2597,6 +4297,190 @@ namespace Clinic.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Staff.Domain.AssistantOvertimeEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<decimal>("ApprovedHours")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("approved_hours");
+
+                    b.Property<Guid>("AssistantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assistant_id");
+
+                    b.Property<Guid?>("AttendanceRecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("attendance_record_id");
+
+                    b.Property<decimal>("HourlyRateSnapshot")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("hourly_rate_snapshot");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("void_reason");
+
+                    b.Property<DateTimeOffset?>("VoidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("voided_at");
+
+                    b.Property<Guid?>("VoidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("voided_by_user_id");
+
+                    b.Property<DateOnly>("WorkDate")
+                        .HasColumnType("date")
+                        .HasColumnName("work_date");
+
+                    b.HasKey("Id")
+                        .HasName("pk_assistant_overtime_entries");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_assistant_overtime_entries_recorded_by_user_id");
+
+                    b.HasIndex("VoidedByUserId")
+                        .HasDatabaseName("ix_assistant_overtime_entries_voided_by_user_id");
+
+                    b.HasIndex("AssistantId", "WorkDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_assistant_overtime_entries_live_day")
+                        .HasFilter("voided_at IS NULL");
+
+                    b.ToTable("assistant_overtime_entries", "staff", t =>
+                        {
+                            t.HasCheckConstraint("ck_assistant_overtime_entries_amount", "amount = round(approved_hours * hourly_rate_snapshot, 2)");
+
+                            t.HasCheckConstraint("ck_assistant_overtime_entries_hours", "approved_hours > 0 AND approved_hours <= 24");
+
+                            t.HasCheckConstraint("ck_assistant_overtime_entries_rate", "hourly_rate_snapshot >= 0");
+
+                            t.HasCheckConstraint("ck_assistant_overtime_entries_void", "(voided_at IS NULL AND voided_by_user_id IS NULL AND void_reason IS NULL) OR (voided_at IS NOT NULL AND voided_by_user_id IS NOT NULL AND void_reason IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Staff.Domain.AttendanceRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AssistantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assistant_id");
+
+                    b.Property<DateOnly>("AttendanceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("attendance_date");
+
+                    b.Property<TimeOnly?>("CheckInTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("check_in_time");
+
+                    b.Property<TimeOnly?>("CheckOutTime")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("check_out_time");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<Guid?>("SalesEmployeeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_employee_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attendance_records");
+
+                    b.HasIndex("AttendanceDate")
+                        .HasDatabaseName("ix_attendance_records_attendance_date");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_attendance_records_recorded_by_user_id");
+
+                    b.HasIndex("UpdatedByUserId")
+                        .HasDatabaseName("ix_attendance_records_updated_by_user_id");
+
+                    b.HasIndex("AssistantId", "AttendanceDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_attendance_records_assistant_day")
+                        .HasFilter("assistant_id IS NOT NULL");
+
+                    b.HasIndex("SalesEmployeeId", "AttendanceDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_attendance_records_sales_day")
+                        .HasFilter("sales_employee_id IS NOT NULL");
+
+                    b.HasIndex("Id", "AssistantId", "AttendanceDate")
+                        .IsUnique()
+                        .HasDatabaseName("ux_attendance_records_id_assistant_date");
+
+                    b.ToTable("attendance_records", "staff", t =>
+                        {
+                            t.HasCheckConstraint("ck_attendance_records_absent_no_times", "status <> 'Absent' OR (check_in_time IS NULL AND check_out_time IS NULL)");
+
+                            t.HasCheckConstraint("ck_attendance_records_one_person", "(assistant_id IS NULL) <> (sales_employee_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_attendance_records_status", "status IN ('Present', 'Late', 'Absent')");
+
+                            t.HasCheckConstraint("ck_attendance_records_times", "check_out_time IS NULL OR check_in_time IS NULL OR check_out_time > check_in_time");
+                        });
+                });
+
             modelBuilder.Entity("Clinic.Modules.Staff.Domain.Doctor", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3061,6 +4945,15 @@ namespace Clinic.Persistence.Migrations
                         .HasConstraintName("fk_visit_corrections_visits_visit_doctor");
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Configuration.Domain.LabPercentageRevision", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("SetByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_lab_percentage_history_users_set_by_user_id");
+                });
+
             modelBuilder.Entity("Clinic.Modules.Configuration.Domain.Setting", b =>
                 {
                     b.HasOne("Clinic.Modules.Identity.Domain.User", null)
@@ -3084,11 +4977,23 @@ namespace Clinic.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_follow_ups_sales_employees_assigned_sales_employee_id");
 
+                    b.HasOne("Clinic.Modules.Finance.Domain.PatientCharge", null)
+                        .WithMany()
+                        .HasForeignKey("ChargeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_follow_ups_patient_charges_charge_id");
+
                     b.HasOne("Clinic.Modules.Identity.Domain.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_follow_ups_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Orthodontics.Domain.OrthoInstallment", null)
+                        .WithMany()
+                        .HasForeignKey("InstallmentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_follow_ups_ortho_installments_installment_id");
 
                     b.HasOne("Clinic.Modules.Crm.Domain.Lead", null)
                         .WithMany()
@@ -3205,6 +5110,35 @@ namespace Clinic.Persistence.Migrations
                         .HasConstraintName("fk_responsibility_history_sales_employees_to_sales_employee_id");
                 });
 
+            modelBuilder.Entity("Clinic.Modules.Expenses.ClinicExpense", b =>
+                {
+                    b.HasOne("Clinic.Modules.Expenses.ExpenseCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_clinic_expenses_expense_categories_category_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_clinic_expenses_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Configuration.Domain.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodCode")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_clinic_expenses_payment_methods_payment_method_code");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_clinic_expenses_users_updated_by_user_id");
+                });
+
             modelBuilder.Entity("Clinic.Modules.Feedback.Domain.FeedbackEntry", b =>
                 {
                     b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
@@ -3250,6 +5184,282 @@ namespace Clinic.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_feedback_requests_visits_visit_patient_doctor");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.ChargeAdjustment", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.PatientCharge", null)
+                        .WithMany()
+                        .HasForeignKey("ChargeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_charge_adjustments_patient_charges_charge_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_charge_adjustments_users_created_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.DistributionEvent", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentCorrection", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_distribution_events_payment_corrections_correction_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_distribution_events_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Finance.FixedLabRevision", null)
+                        .WithMany()
+                        .HasForeignKey("FixedLabRevisionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_distribution_events_fixed_lab_revision_fixed_lab_revision_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_distribution_events_payments_payment_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.DoctorEarning", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_earnings_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.DistributionEvent", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_earnings_distribution_events_event_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentAllocation", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentAllocationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_earnings_payment_allocations_payment_allocation_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.DoctorEntitlement", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_entitlements_doctors_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.DistributionEvent", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_entitlements_distribution_events_event_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentAllocation", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentAllocationId", "ChargeId")
+                        .HasPrincipalKey("Id", "ChargeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_entitlements_allocations_allocation_charge");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PatientCharge", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("DiscountSetByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_patient_charges_users_discount_set_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_patient_charges_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("PerformingDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_patient_charges_doctors_performing_doctor_id");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.TreatmentCase", null)
+                        .WithMany()
+                        .HasForeignKey("TreatmentCaseId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_patient_charges_cases_case_patient");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.Visit", null)
+                        .WithMany()
+                        .HasForeignKey("VisitId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_patient_charges_visits_visit_patient");
+
+                    b.HasOne("Clinic.Modules.Clinical.Domain.CaseWorkItem", null)
+                        .WithMany()
+                        .HasForeignKey("CaseWorkItemId", "TreatmentCaseId", "PerformingDoctorId")
+                        .HasPrincipalKey("Id", "TreatmentCaseId", "PerformingDoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_patient_charges_work_items_item_case_doctor");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PatientCreditEntry", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentCorrection", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_patient_credit_entries_payment_corrections_correction_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_patient_credit_entries_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentAllocation", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentAllocationId", "PaymentId")
+                        .HasPrincipalKey("Id", "PaymentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_patient_credit_entries_allocations_allocation_payment");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_patient_credit_entries_payments_payment_patient");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.Payment", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentCorrection", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_payments_payment_corrections_correction_id");
+
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_payments_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Configuration.Domain.PaymentMethod", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentMethodCode")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_payments_payment_methods_payment_method_code");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReceivedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_payments_users_received_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("ReversesPaymentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_payments_payments_reverses_payment_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PaymentAllocation", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentCorrection", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_payment_allocations_payment_corrections_correction_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.DistributionEvent", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_payment_allocations_distribution_event_event_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentAllocation", null)
+                        .WithMany()
+                        .HasForeignKey("ReversesAllocationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_payment_allocations_payment_allocations_reverses_allocation");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PatientCharge", null)
+                        .WithMany()
+                        .HasForeignKey("ChargeId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_allocations_charges_charge_patient");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_allocations_payments_payment_patient");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.PaymentCorrection", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.Payment", null)
+                        .WithMany()
+                        .HasForeignKey("OriginalPaymentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_corrections_payments_original_payment_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("PerformedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_corrections_users_performed_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Finance.Domain.RevenueDistribution", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.DistributionEvent", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_revenue_distributions_distribution_events_event_id");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentAllocation", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentAllocationId", "ChargeId")
+                        .HasPrincipalKey("Id", "ChargeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_revenue_distributions_allocations_allocation_charge");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Finance.FixedLabExpense", b =>
@@ -3345,6 +5555,59 @@ namespace Clinic.Persistence.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_notifications_users_recipient_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.Domain.InstallmentPayment", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("AppliedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_installment_payments_users_applied_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Orthodontics.Domain.OrthoInstallment", null)
+                        .WithMany()
+                        .HasForeignKey("InstallmentId", "OrthoCaseId")
+                        .HasPrincipalKey("Id", "OrthoCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_installment_payments_installments_installment_case");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentAllocation", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentAllocationId", "ChargeId")
+                        .HasPrincipalKey("Id", "ChargeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_installment_payments_allocations_allocation_charge");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.Domain.OrthoInstallment", b =>
+                {
+                    b.HasOne("Clinic.Modules.Orthodontics.OrthoCase", null)
+                        .WithMany()
+                        .HasForeignKey("OrthoCaseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_ortho_installments_ortho_cases_ortho_case_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Orthodontics.Domain.OrthoInstallmentRevision", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("EnteredByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_ortho_installment_revisions_users_entered_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Orthodontics.Domain.OrthoInstallment", null)
+                        .WithMany()
+                        .HasForeignKey("InstallmentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_ortho_installment_revisions_ortho_installments_installment_");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Orthodontics.OrthoCase", b =>
@@ -3443,6 +5706,142 @@ namespace Clinic.Persistence.Migrations
                         .HasForeignKey("PreviousDoctorId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_patient_doctor_assignments_doctors_previous_doctor_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.AssistantPayroll", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Assistant", null)
+                        .WithMany()
+                        .HasForeignKey("AssistantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_payrolls_assistants_assistant_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("BasePayEnteredByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_assistant_payrolls_users_base_pay_entered_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.AssistantPayrollOvertimeItem", b =>
+                {
+                    b.HasOne("Clinic.Modules.Payroll.Domain.AssistantPayroll", null)
+                        .WithMany()
+                        .HasForeignKey("AssistantPayrollId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_payroll_overtime_items_assistant_payrolls_assista");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.AssistantOvertimeEntry", null)
+                        .WithMany()
+                        .HasForeignKey("OvertimeEntryId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_payroll_overtime_items_assistant_overtime_entries");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.DoctorPayroll", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_payrolls_doctors_doctor_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.DoctorPayrollAdjustment", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_payroll_adjustments_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Payroll.Domain.DoctorPayroll", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorPayrollId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_payroll_adjustments_doctor_payrolls_doctor_payroll_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.DoctorPayrollItem", b =>
+                {
+                    b.HasOne("Clinic.Modules.Finance.Domain.DoctorEarning", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorEarningId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_payroll_items_doctor_earnings_doctor_earning_id");
+
+                    b.HasOne("Clinic.Modules.Payroll.Domain.DoctorPayroll", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorPayrollId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_doctor_payroll_items_doctor_payrolls_doctor_payroll_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.SalesPayroll", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.SalesEmployee", null)
+                        .WithMany()
+                        .HasForeignKey("SalesEmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_sales_payrolls_sales_employees_sales_employee_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.SalesPayrollAdjustment", b =>
+                {
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_sales_payroll_adjustments_users_created_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Payroll.Domain.SalesPayroll", null)
+                        .WithMany()
+                        .HasForeignKey("SalesPayrollId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_sales_payroll_adjustments_sales_payrolls_sales_payroll_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Payroll.Domain.SalesPayrollCommissionItem", b =>
+                {
+                    b.HasOne("Clinic.Modules.Patients.Domain.Patient", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_sales_payroll_commission_items_patients_patient_id");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.SalesCommissionRate", null)
+                        .WithMany()
+                        .HasForeignKey("RateRevisionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_sales_payroll_commission_items_sales_commission_rate_histor");
+
+                    b.HasOne("Clinic.Modules.Payroll.Domain.SalesPayroll", null)
+                        .WithMany()
+                        .HasForeignKey("SalesPayrollId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_sales_payroll_commission_items_sales_payrolls_sales_payroll");
+
+                    b.HasOne("Clinic.Modules.Finance.Domain.PaymentAllocation", null)
+                        .WithMany()
+                        .HasForeignKey("PaymentAllocationId", "PatientId")
+                        .HasPrincipalKey("Id", "PatientId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_sales_commission_items_allocations_allocation_patient");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Prescriptions.Domain.Prescription", b =>
@@ -3586,6 +5985,57 @@ namespace Clinic.Persistence.Migrations
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .HasConstraintName("fk_assistants_users_created_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Staff.Domain.AssistantOvertimeEntry", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Assistant", null)
+                        .WithMany()
+                        .HasForeignKey("AssistantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_overtime_entries_assistants_assistant_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_assistant_overtime_entries_users_recorded_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("VoidedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_assistant_overtime_entries_users_voided_by_user_id");
+                });
+
+            modelBuilder.Entity("Clinic.Modules.Staff.Domain.AttendanceRecord", b =>
+                {
+                    b.HasOne("Clinic.Modules.Staff.Domain.Assistant", null)
+                        .WithMany()
+                        .HasForeignKey("AssistantId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_attendance_records_assistants_assistant_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_attendance_records_users_recorded_by_user_id");
+
+                    b.HasOne("Clinic.Modules.Staff.Domain.SalesEmployee", null)
+                        .WithMany()
+                        .HasForeignKey("SalesEmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_attendance_records_sales_employees_sales_employee_id");
+
+                    b.HasOne("Clinic.Modules.Identity.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_attendance_records_users_updated_by_user_id");
                 });
 
             modelBuilder.Entity("Clinic.Modules.Staff.Domain.Doctor", b =>

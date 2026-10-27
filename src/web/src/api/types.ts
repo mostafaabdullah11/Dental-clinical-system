@@ -59,6 +59,7 @@ export interface ManagerAssistant {
   overtimeHourlyRate: string | null;
   isActive: boolean;
   deactivatedAt: string | null;
+  version: string;
 }
 
 export interface ManagerSettings {

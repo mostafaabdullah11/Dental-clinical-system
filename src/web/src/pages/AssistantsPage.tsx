@@ -31,6 +31,7 @@ export function AssistantsPage() {
           <tr>
             <th>الاسم الكامل</th>
             <th>الراتب الحالي</th>
+            <th>سعر ساعة الإضافي</th>
             <th>الحالة</th>
             <th>إجراءات</th>
           </tr>
@@ -67,7 +68,18 @@ function AssistantRow({ assistant, run }: { assistant: ManagerAssistant; run: (a
           حفظ الاسم
         </button>
       </td>
-      <td>{assistant.currentSalary}</td>
+      <td>
+        <MoneyEdit
+          value={assistant.currentSalary}
+          onSave={(v) => run(() => api.put(`${url}/salary`, { currentSalary: v, reason: 'تعديل الراتب' }, assistant.version))}
+        />
+      </td>
+      <td>
+        <MoneyEdit
+          value={assistant.overtimeHourlyRate ?? ''}
+          onSave={(v) => run(() => api.put(`${url}/overtime-rate`, { overtimeHourlyRate: v, reason: 'تعديل سعر الساعة' }, assistant.version))}
+        />
+      </td>
       <td>
         <StatusBadge active={assistant.isActive} />
       </td>
@@ -119,5 +131,18 @@ function CreateAssistantForm({ onCreated }: { onCreated: () => void }) {
       </Field>
       <button type="submit">إضافة</button>
     </form>
+  );
+}
+
+/** Manager-only salary / overtime-rate change (Staff.AssistantSalary.Configure / Staff.AssistantOvertimeRate.Configure). */
+function MoneyEdit({ value, onSave }: { value: string; onSave: (v: string) => Promise<void> }) {
+  const [text, setText] = useState(value);
+  return (
+    <span className="actions">
+      <input value={text} onChange={(e) => setText(e.target.value)} inputMode="decimal" size={8} />
+      <button type="button" disabled={!isDecimalText(text) || text === value} onClick={() => void onSave(toTwoDecimals(text))}>
+        حفظ
+      </button>
+    </span>
   );
 }
