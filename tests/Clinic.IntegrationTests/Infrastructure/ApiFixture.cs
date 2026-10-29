@@ -18,14 +18,17 @@ public sealed class ApiFixture : IAsyncLifetime
     public const string Password = "Clinic-Test-Pass-2026!";
     public const string ManagerUserName = "first.manager";
 
-    public TestDatabase Database { get; private set; } = null!;
-    public ClinicApiFactory Factory { get; private set; } = null!;
+    private TestDatabase? database;
+    private ClinicApiFactory? factory;
+
+    public TestDatabase Database => database ?? throw new InvalidOperationException("ApiFixture was not initialized.");
+    public ClinicApiFactory Factory => factory ?? throw new InvalidOperationException("ApiFixture was not initialized.");
 
     public async ValueTask InitializeAsync()
     {
-        Database = await TestDatabase.CreateAsync();
-        Factory = new ClinicApiFactory(Database);
-        var (outcome, error) = await Factory.RunOperatorAsync(c =>
+        database = await TestDatabase.CreateAsync();
+        factory = new ClinicApiFactory(database);
+        var (outcome, error) = await factory.RunOperatorAsync(c =>
             c.CreateInitialManagerAsync(ManagerUserName, Password, CancellationToken.None));
         if (outcome != OperatorOutcome.Succeeded)
         {
@@ -33,10 +36,18 @@ public sealed class ApiFixture : IAsyncLifetime
         }
     }
 
+    /// <summary>Tolerates a partially initialized fixture so cleanup never masks the original startup failure.</summary>
     public async ValueTask DisposeAsync()
     {
-        await Factory.DisposeAsync();
-        await Database.DisposeAsync();
+        if (factory is not null)
+        {
+            await factory.DisposeAsync();
+        }
+
+        if (database is not null)
+        {
+            await database.DisposeAsync();
+        }
     }
 
     public static string Unique(string prefix) => $"{prefix}.{Guid.NewGuid().ToString("N")[..8]}";

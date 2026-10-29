@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="YamlDotNet" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -15,6 +16,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Clinic.Api\Clinic.Api.csproj" />
+    <!-- The development-only demo data tool: its safety guard and a full seed run are tested here (nothing in src references it). -->
+    <ProjectReference Include="..\..\tools\Clinic.DemoSeed\Clinic.DemoSeed.csproj" />
     <!-- Aliased: both hosts declare a top-level Program. The tests run jobs through the Worker's own composition. -->
     <ProjectReference Include="..\..\src\Clinic.Worker\Clinic.Worker.csproj" Aliases="worker" />
   </ItemGroup>

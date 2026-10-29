@@ -14,6 +14,8 @@ internal sealed record RecurringJob(string Id, TimeSpan Interval, long LockKey, 
 
 internal static class RecurringJobCatalog
 {
+    public const string OperationsHealthJobId = "J7-operations-health";
+
     public static readonly IReadOnlyList<RecurringJob> All =
     [
         new("J1-appointment-reminders", TimeSpan.FromMinutes(15), 7_301,
@@ -26,7 +28,7 @@ internal static class RecurringJobCatalog
             async (sp, ct) => $"processed={await sp.GetRequiredService<INotificationDispatcher>().DispatchDueAsync(ct)}"),
         new("J5-retry", TimeSpan.FromMinutes(5), 7_305,
             async (sp, ct) => $"requeued={await sp.GetRequiredService<INotificationDispatcher>().RetryFailedAsync(ct)}"),
-        new("J7-operations-health", TimeSpan.FromMinutes(5), 7_307, OperationsHealthAsync),
+        new(OperationsHealthJobId, TimeSpan.FromMinutes(5), 7_307, OperationsHealthAsync),
     ];
 
     /// <summary>J7: counts only (never names, ids or text); a fixed message per probe.</summary>
@@ -48,25 +50,32 @@ internal static class RecurringJobCatalog
 /// (DisableConcurrentExecution semantics). Jobs are idempotent: planners select by clinic-local date and the dedupe
 /// key decides, so a missed or repeated run self-heals.
 /// </summary>
-internal sealed class RecurringJobRunner(IServiceScopeFactory scopes, ILogger<RecurringJobRunner> logger) : BackgroundService
+internal sealed class RecurringJobRunner(IServiceScopeFactory scopes, ILogger<RecurringJobRunner> logger, IConfiguration configuration)
+    : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Clinic worker started with jobs {Jobs}", string.Join(", ", RecurringJobCatalog.All.Select(j => j.Id)));
         var next = RecurringJobCatalog.All.ToDictionary(j => j.Id, _ => DateTimeOffset.UtcNow);
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+        using var monitoring = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
         do
         {
+            WorkerHeartbeat.Touch();
             foreach (var job in RecurringJobCatalog.All.Where(j => next[j.Id] <= DateTimeOffset.UtcNow))
             {
                 next[job.Id] = DateTimeOffset.UtcNow + job.Interval;
-                await RunOnceAsync(job, stoppingToken);
+                if (await RunOnceAsync(job, stoppingToken) && job.Id == RecurringJobCatalog.OperationsHealthJobId)
+                {
+                    await WorkerHeartbeat.PingAsync(monitoring, configuration["Monitoring:WorkerHeartbeatUrl"], logger, stoppingToken);
+                }
             }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
-    internal async Task RunOnceAsync(RecurringJob job, CancellationToken ct)
+    /// <summary>Runs one job under its advisory lock; true when it ran and succeeded.</summary>
+    internal async Task<bool> RunOnceAsync(RecurringJob job, CancellationToken ct)
     {
         try
         {
@@ -79,13 +88,14 @@ internal sealed class RecurringJobRunner(IServiceScopeFactory scopes, ILogger<Re
                 if (!locked)
                 {
                     logger.LogInformation("Job {Job} skipped: another instance is running it", job.Id);
-                    return;
+                    return false;
                 }
 
                 try
                 {
                     var summary = await job.RunAsync(scope.ServiceProvider, ct);
                     logger.LogInformation("Job {Job} succeeded {Summary}", job.Id, summary);
+                    return true;
                 }
                 finally
                 {
@@ -101,6 +111,7 @@ internal sealed class RecurringJobRunner(IServiceScopeFactory scopes, ILogger<Re
         {
             // Fixed message and the exception type only: never SQL, names or contact data.
             logger.LogError("Job {Job} failed with {ErrorType}", job.Id, e.GetType().Name);
+            return false;
         }
     }
 }

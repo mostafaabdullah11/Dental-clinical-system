@@ -23,3 +23,12 @@ deploy/secrets/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Task 5: local production-like throwaway secrets and tool output
+deploy/local/secrets/
+deploy/local/.env
+*.agekey
+*.key
+*.pem
+playwright-report/
+test-results/

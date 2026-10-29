@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import {
-  appointmentStatusLabels, caseStatusLabels, discountRoleLabels, referralStatusLabels, referralTypeLabels, visitStatusLabels,
+  caseStatusLabels, discountRoleLabels, referralStatusLabels, referralTypeLabels, visitStatusLabels,
   type CaseSummary, type DoctorReferral, type PricingLineSales, type SalesAppointment, type SalesClinicalSummary, type VisitDetail,
   type VisitListItem,
 } from '../api/task3';
@@ -10,6 +10,7 @@ import { useAuth } from '../auth/AuthContext';
 import { formatClinicDateTime } from '../lib/time';
 import { useLoad } from '../lib/useLoad';
 import { ErrorBanner } from './Form';
+import { AppointmentStatusBadge } from './ui';
 import { DiscountEditor } from './visit/DiscountEditor';
 
 /** Doctor patient view (FR-CLN-010): Visit history, treatment cases, referrals with the Doctor's notes, walk-in Visit. */
@@ -114,7 +115,9 @@ export function SalesPatientSection({ patientId }: { patientId: string }) {
                   <td>{formatClinicDateTime(a.startAt, zone)}</td>
                   <td>{a.doctor.name}</td>
                   <td>{a.reason}</td>
-                  <td>{appointmentStatusLabels[a.status]}</td>
+                  <td>
+                    <AppointmentStatusBadge status={a.status} />
+                  </td>
                 </tr>
               ))}
             </tbody>

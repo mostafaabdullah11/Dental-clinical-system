@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { PagedResult, PatientListItem } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBanner, Field } from '../components/Form';
+import { EmptyState, PageHeader } from '../components/ui';
 import { formatAge } from '../lib/patients';
 
 /**
@@ -32,12 +33,17 @@ export function PatientsSearchPage() {
 
   return (
     <section>
-      <h1>المرضى</h1>
-      {can('Patients.Identity.Write') && can('Patients.Contact.Write') && (
-        <p>
-          <Link to="/patients/new">تسجيل مريض جديد (مباشر)</Link>
-        </p>
-      )}
+      <PageHeader
+        title="المرضى"
+        lead={contactAudience ? 'ابحث بالكود أو الاسم أو رقم الهاتف' : 'ابحث بكود المريض أو الاسم'}
+        actions={
+          can('Patients.Identity.Write') && can('Patients.Contact.Write') ? (
+            <Link to="/patients/new">
+              <button type="button">تسجيل مريض جديد (مباشر)</button>
+            </Link>
+          ) : undefined
+        }
+      />
       <form className="card inline" onSubmit={(e) => void submit(e)}>
         <ErrorBanner error={error} />
         <Field label={contactAudience ? 'كود المريض أو الاسم أو رقم الهاتف' : 'كود المريض أو الاسم'} field="query" error={error}>
@@ -48,6 +54,8 @@ export function PatientsSearchPage() {
       {result && (
         <>
           <p className="hint">عدد النتائج: {result.totalCount}</p>
+          {result.items.length === 0 && <EmptyState title="لا توجد نتائج مطابقة" hint="جرّب كتابة جزء آخر من الاسم أو الكود." icon="users" />}
+          {result.items.length > 0 && (
           <table>
             <thead>
               <tr>
@@ -70,6 +78,7 @@ export function PatientsSearchPage() {
               ))}
             </tbody>
           </table>
+          )}
         </>
       )}
     </section>

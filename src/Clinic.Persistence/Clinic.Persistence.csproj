@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Migrations\Sql\*.sql" />
+    <EmbeddedResource Include="Operations\*.sql" />
   </ItemGroup>
 
 </Project>

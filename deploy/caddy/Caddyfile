@@ -1,0 +1,83 @@
+# Clinic reverse proxy (DEPLOYMENT_ARCHITECTURE.md §1.3; SECURITY_DESIGN.md §3, §11).
+# Environment: CLINIC_DOMAIN (e.g. the clinic domain; `localhost` for the local production-like stack, which makes Caddy use
+# its internal CA), CLINIC_ACME_EMAIL, CLINIC_API_UPSTREAM (default api:8080). Local-only overrides (unset in production):
+# CLINIC_HTTP_PORT / CLINIC_HTTPS_PORT, CLINIC_WEB_ROOT, CLINIC_CADDY_LOCAL_OPTIONS (e.g. skip_install_trust).
+{
+	admin off
+	email {$CLINIC_ACME_EMAIL:admin@localhost}
+	http_port {$CLINIC_HTTP_PORT:80}
+	https_port {$CLINIC_HTTPS_PORT:443}
+	{$CLINIC_CADDY_LOCAL_OPTIONS}
+	servers {
+		timeouts {
+			read_header 10s
+			read_body 30s
+			write 60s
+			idle 2m
+		}
+	}
+}
+
+{$CLINIC_DOMAIN:localhost} {
+	encode zstd gzip
+
+	# 1 MB body limit: V1 has no uploads.
+	request_body {
+		max_size 1MB
+	}
+
+	# Access log: method, path, status, duration, size. No query string, no ids, no headers (cookies), no bodies.
+	log {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request>uri regexp "(\?.*$)|([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})" "{redacted}"
+				request>headers delete
+				request>tls delete
+				resp_headers delete
+				user_id delete
+			}
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()"
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+
+	# `route` keeps the written order: the 404 rules always run before any proxy or the SPA catch-all.
+	route {
+		# Internal only: readiness is for Docker healthchecks and the deploy script, never the internet.
+		@internal path /health/ready /health/ready/*
+		respond @internal 404
+
+		# Never routed in production (Swagger / OpenAPI, any job dashboard).
+		@hidden path /openapi /openapi/* /swagger /swagger/* /hangfire /hangfire/*
+		respond @hidden 404
+
+		handle /api/* {
+			reverse_proxy {$CLINIC_API_UPSTREAM:api:8080}
+		}
+
+		handle /health/live {
+			reverse_proxy {$CLINIC_API_UPSTREAM:api:8080}
+		}
+
+		# The SPA: hashed assets cached long; everything else (index.html and SPA routes) never cached.
+		handle {
+			root * "{$CLINIC_WEB_ROOT:/srv}"
+			@assets path /assets/*
+			header @assets Cache-Control "public, max-age=31536000, immutable"
+			@notAssets not path /assets/*
+			header @notAssets Cache-Control "no-store"
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}

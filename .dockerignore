@@ -1,0 +1,19 @@
+# Build context hygiene: no build output, dependencies, local secrets or VCS metadata enter any image.
+.git
+.github
+.vs
+.vscode
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/TestResults
+.env
+*.env
+deploy/local/secrets
+deploy/local/.env
+**/*.pfx
+**/*.key
+**/*.pem
+docs
+tests

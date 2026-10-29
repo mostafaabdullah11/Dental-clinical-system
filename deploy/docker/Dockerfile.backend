@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1.7
+# clinic-backend: ONE image for the api and the worker (DEPLOYMENT_ARCHITECTURE.md §1.2). Build context = repository root.
+#   api:    command ["api/Clinic.Api.dll"]       healthcheck ["dotnet", "api/Clinic.Api.dll", "--healthcheck"]
+#   worker: command ["worker/Clinic.Worker.dll"] healthcheck ["dotnet", "worker/Clinic.Worker.dll", "--healthcheck"]
+# Base images pinned by digest (rebuilt on a schedule by Dependabot). Runtime is the chiseled image: no shell, no package
+# manager, non-root user `app` (UID 1654). No secret is ever copied into the image; secrets arrive as /run/secrets files.
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b AS build
+WORKDIR /src
+COPY global.json Directory.Build.props Directory.Packages.props ./
+COPY src/ src/
+RUN dotnet restore src/Clinic.Api/Clinic.Api.csproj \
+ && dotnet restore src/Clinic.Worker/Clinic.Worker.csproj
+RUN dotnet publish src/Clinic.Api/Clinic.Api.csproj -c Release -o /out/api --no-restore /p:UseAppHost=false \
+ && dotnet publish src/Clinic.Worker/Clinic.Worker.csproj -c Release -o /out/worker --no-restore /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:c89a6a61f494f20a5ae302990e814627a8d91b332fd4a8e7c1707c2d4da9555d
+WORKDIR /app
+COPY --from=build --chown=1654:1654 /out/api ./api
+COPY --from=build --chown=1654:1654 /out/worker ./worker
+ENV ASPNETCORE_HTTP_PORTS=8080 \
+    ASPNETCORE_ENVIRONMENT=Production \
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    DOTNET_gcServer=0 \
+    TZ=UTC
+USER 1654
+EXPOSE 8080
+ENTRYPOINT ["dotnet"]
+CMD ["api/Clinic.Api.dll"]

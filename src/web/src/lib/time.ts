@@ -46,6 +46,11 @@ export function addDays(date: string, days: number): string {
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
+/** The last `count` calendar dates ending at `end` (inclusive), oldest first. */
+export function lastDays(end: string, count: number): string[] {
+  return Array.from({ length: count }, (_, i) => addDays(end, i - (count - 1)));
+}
+
 /** Start (ISO) of a clinic-local calendar day; used to build half-open UTC ranges for list filters. */
 export function clinicDayStartIso(date: string, zone: string | null | undefined): string {
   return clinicLocalToIso(`${date}T00:00`, zone);

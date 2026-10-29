@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { appointmentKindLabels, appointmentStatusLabels, type DoctorQueueItem, type DoctorSchedule, type VisitDetail } from '../api/task3';
+import { appointmentKindLabels, type DoctorQueueItem, type DoctorSchedule, type VisitDetail } from '../api/task3';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBanner } from '../components/Form';
+import { AppointmentStatusBadge } from '../components/ui';
 import { formatAge } from '../lib/patients';
 import { addDays, clinicLocalToIso, clinicToday, formatClinicTime, formatDate } from '../lib/time';
 import { useLoad } from '../lib/useLoad';
@@ -119,7 +120,9 @@ export function DoctorSchedulePage() {
                     </td>
                     <td>{a.reason}</td>
                     <td>{appointmentKindLabels[a.kind]}</td>
-                    <td>{appointmentStatusLabels[a.status]}</td>
+                    <td>
+                      <AppointmentStatusBadge status={a.status} />
+                    </td>
                     <td>{a.arrivedAt ? 'حضر' : ''}</td>
                     <td>{a.canReschedule && <DoctorReschedule id={a.id} version={a.version} duration={a.durationMinutes} onDone={() => void reload()} />}</td>
                   </tr>

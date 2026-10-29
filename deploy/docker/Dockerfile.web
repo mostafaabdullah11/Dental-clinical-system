@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1.7
+# clinic-web: Caddy + the built Arabic RTL React SPA (DEPLOYMENT_ARCHITECTURE.md §1.2, §1.3). The only container with
+# published ports (80, 443). Runs as a non-root user; the Caddy binary carries only CAP_NET_BIND_SERVICE so it can bind
+# 80/443 while every other capability is dropped by compose. Build context = repository root.
+
+FROM node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
+WORKDIR /web
+COPY src/web/package.json src/web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY src/web/ ./
+# The same gates as the PR pipeline: security lint, unit tests, type check, production build.
+RUN npm run lint && npm run test && npm run build
+
+FROM caddy:2-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f
+RUN apk add --no-cache libcap \
+ && setcap cap_net_bind_service=+ep /usr/bin/caddy \
+ && apk del libcap \
+ && addgroup -S -g 10001 caddy && adduser -S -D -H -u 10001 -G caddy caddy \
+ && mkdir -p /data /config && chown -R caddy:caddy /data /config
+COPY deploy/caddy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build --chown=caddy:caddy /web/dist /srv
+USER 10001
+EXPOSE 80 443 443/udp

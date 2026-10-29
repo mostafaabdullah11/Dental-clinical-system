@@ -1,0 +1,11 @@
+title = "Clinic secret scanning"
+
+[extend]
+useDefault = true
+
+# The only reviewed exception: the development-only demo password documented in docs/DEVELOPMENT_DEMO.md and used as the default of
+# tools/Clinic.DemoSeed. It is not a secret, is refused by the tool outside a local Development database, and a test
+# (DemoUpgradeContractTests) fails the build if it ever appears under src/ or deploy/.
+[allowlist]
+description = "development-only demo password"
+regexes = ['''DemoClinic@2026''']

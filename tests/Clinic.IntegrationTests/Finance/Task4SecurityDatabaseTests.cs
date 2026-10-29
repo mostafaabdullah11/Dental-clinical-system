@@ -156,7 +156,7 @@ public sealed class Task4SecurityDatabaseTests(ApiFixture fixture)
         await database.MigrateAsync();
 
         Assert.Equal(before, await database.ColumnAsync(snapshot));
-        Assert.Equal(33, await database.ScalarAsync<long>("SELECT count(*) FROM infra.\"__EFMigrationsHistory\""));
+        Assert.Equal(34, await database.ScalarAsync<long>("SELECT count(*) FROM infra.\"__EFMigrationsHistory\""));
         Assert.Equal(3, await database.ScalarAsync<long>("SELECT count(*) FROM configuration.payment_methods"));
         Assert.Equal(11, await database.ScalarAsync<long>("SELECT count(*) FROM expenses.expense_categories"));
         Assert.Equal(1, await database.ScalarAsync<long>("SELECT count(*) FROM identity.role_permissions WHERE permission_key = 'Finance.OwnWork.Read'"));

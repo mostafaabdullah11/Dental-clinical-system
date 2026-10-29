@@ -1,6 +1,12 @@
 using Clinic.Api.Composition;
 using Clinic.Api.Operator;
 
+if (args.Contains("--healthcheck"))
+{
+    // Container healthcheck (DEPLOYMENT_ARCHITECTURE.md §1.9): the internal readiness probe over loopback; exit code only.
+    return await ContainerHealthcheck.RunAsync();
+}
+
 var operatorMode = OperatorCli.IsOperatorCommand(args);
 
 // Operator commands never receive raw arguments as configuration (they may contain a username only).

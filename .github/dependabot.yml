@@ -1,0 +1,7 @@
+# Weekly dependency and base-image updates (DEPLOYMENT_ARCHITECTURE.md §2.8). Every update runs the full PR pipeline.
+version: 2
+updates:
+  - { package-ecosystem: nuget, directory: "/", schedule: { interval: weekly } }
+  - { package-ecosystem: npm, directory: "/src/web", schedule: { interval: weekly } }
+  - { package-ecosystem: docker, directory: "/deploy/docker", schedule: { interval: weekly } }
+  - { package-ecosystem: github-actions, directory: "/", schedule: { interval: weekly } }

@@ -1,0 +1,129 @@
+# Production / staging stack (DEPLOYMENT_ARCHITECTURE.md §1.1–§1.9). Started ONLY by deploy/scripts/deploy.sh.
+# Images are referenced by DIGEST (written by the deploy script into release.env); nothing is built on the server.
+# Secrets are files in ${CLINIC_SECRETS_DIR} (root-owned, 600) mounted under /run/secrets — never env values, never images.
+# Separation (verified by ComposeLintTests and the smoke test): api = app_db_conn + dp_cert(+password); worker = worker_db_conn
+# ONLY; migrator = migrator_db_conn only; backup = backup_* only. Only `web` publishes ports.
+name: clinic
+
+x-hardening: &hardening
+  read_only: true
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+  pids_limit: 256
+  logging:
+    driver: json-file
+    options: { max-size: "100m", max-file: "5" }
+
+services:
+  web:
+    <<: *hardening
+    image: ${CLINIC_WEB_IMAGE:?set by deploy.sh}
+    cap_add: ["NET_BIND_SERVICE"]
+    ports: ["80:80", "443:443", "443:443/udp"]
+    networks: [edge, internal]
+    environment:
+      CLINIC_DOMAIN: ${CLINIC_DOMAIN:?set in the environment file}
+      CLINIC_ACME_EMAIL: ${CLINIC_ACME_EMAIL:?set in the environment file}
+      CLINIC_API_UPSTREAM: api:8080
+    volumes: ["caddy_data:/data", "caddy_config:/config"]
+    tmpfs: ["/tmp:size=16m"]
+    depends_on: { api: { condition: service_healthy } }
+    mem_limit: 256m
+    cpus: 0.5
+    restart: unless-stopped
+
+  api:
+    <<: *hardening
+    image: ${CLINIC_BACKEND_IMAGE:?set by deploy.sh}
+    command: ["api/Clinic.Api.dll"]
+    networks: [internal]
+    secrets: [app_db_conn, dp_cert, dp_cert_password]
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${CLINIC_ENVIRONMENT:-Production}
+      CLINIC_APP_DB_CONNECTION_FILE: /run/secrets/app_db_conn
+      DataProtection__CertificatePath: /run/secrets/dp_cert
+      DataProtection__CertificatePasswordFile: /run/secrets/dp_cert_password
+      Security__TrustedProxyNetworks__0: ${CLINIC_INTERNAL_SUBNET:-172.30.0.0/24}
+    tmpfs: ["/tmp:size=64m"]
+    healthcheck:
+      test: ["CMD", "dotnet", "api/Clinic.Api.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 6s
+      retries: 4
+      start_period: 30s
+    mem_limit: 1g
+    cpus: 1.0
+    restart: unless-stopped
+
+  worker:
+    <<: *hardening
+    image: ${CLINIC_BACKEND_IMAGE:?set by deploy.sh}
+    command: ["worker/Clinic.Worker.dll"]
+    networks: [internal]
+    secrets: [worker_db_conn]
+    environment:
+      DOTNET_ENVIRONMENT: ${CLINIC_ENVIRONMENT:-Production}
+      CLINIC_WORKER_DB_CONNECTION_FILE: /run/secrets/worker_db_conn
+      CLINIC_HEARTBEAT_FILE: /tmp/clinic-worker-heartbeat
+      Monitoring__WorkerHeartbeatUrl: ${CLINIC_WORKER_HEARTBEAT_URL:-}
+    tmpfs: ["/tmp:size=16m"]
+    healthcheck:
+      test: ["CMD", "dotnet", "worker/Clinic.Worker.dll", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    mem_limit: 512m
+    cpus: 0.5
+    restart: unless-stopped
+
+  migrator:
+    <<: *hardening
+    image: ${CLINIC_MIGRATOR_IMAGE:?set by deploy.sh}
+    profiles: ["migrate"]
+    networks: [internal]
+    secrets: [migrator_db_conn]
+    environment:
+      CLINIC_MIGRATOR_CONNECTION_FILE: /run/secrets/migrator_db_conn
+    tmpfs: ["/tmp:size=16m"]
+    restart: "no"
+
+  backup:
+    <<: *hardening
+    image: ${CLINIC_BACKUP_IMAGE:?set by deploy.sh}
+    profiles: ["backup"]
+    networks: [internal]
+    secrets: [backup_db_conn, backup_upload_credentials, backup_public_keys, backup_heartbeat_url]
+    environment:
+      BACKUP_DB_CONN_FILE: /run/secrets/backup_db_conn
+      BACKUP_RECIPIENTS_FILE: /run/secrets/backup_public_keys
+      BACKUP_UPLOAD_CREDENTIALS_FILE: /run/secrets/backup_upload_credentials
+      BACKUP_HEARTBEAT_URL_FILE: /run/secrets/backup_heartbeat_url
+      BACKUP_S3_ENDPOINT: ${CLINIC_BACKUP_S3_ENDPOINT:-}
+      BACKUP_S3_BUCKET: ${CLINIC_BACKUP_S3_BUCKET:-}
+      BACKUP_S3_REGION: ${CLINIC_BACKUP_S3_REGION:-}
+    volumes: ["backup_state:/var/lib/clinic-backup"]
+    tmpfs: ["/tmp:size=4g"]
+    restart: "no"
+
+networks:
+  edge: {}
+  internal:
+    ipam:
+      config: [{ subnet: "${CLINIC_INTERNAL_SUBNET:-172.30.0.0/24}" }]
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}
+  backup_state: {}
+
+secrets:
+  app_db_conn:               { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/app_db_conn" }
+  dp_cert:                   { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/dp_cert.pfx" }
+  dp_cert_password:          { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/dp_cert_password" }
+  worker_db_conn:            { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/worker_db_conn" }
+  migrator_db_conn:          { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/migrator_db_conn" }
+  backup_db_conn:            { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/backup_db_conn" }
+  backup_upload_credentials: { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/backup_upload_credentials" }
+  backup_public_keys:        { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/backup_public_keys" }
+  backup_heartbeat_url:      { file: "${CLINIC_SECRETS_DIR:-/opt/clinic/secrets}/backup_heartbeat_url" }

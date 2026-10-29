@@ -49,11 +49,10 @@ function VisitWorkspace({ visit, setVisit, reload }: { visit: VisitDetail; setVi
   const zone = me?.clinicTimezone;
   const editable = visit.canEdit;
   const [error, setError] = useState<unknown>(null);
+  const [confirming, setConfirming] = useState(false);
 
   async function finalize() {
-    if (!window.confirm('إنهاء الزيارة نهائي: لن يمكن تعديلها بعد ذلك إلا بالتصحيح المراقَب. هل تريد المتابعة؟')) {
-      return;
-    }
+    setConfirming(false);
     setError(null);
     try {
       setVisit(await api.post<VisitDetail>(`/api/doctor/visits/${visit.id}/finalize`, undefined, visit.version));
@@ -76,10 +75,21 @@ function VisitWorkspace({ visit, setVisit, reload }: { visit: VisitDetail; setVi
           الحالة: <strong>{visitStatusLabels[visit.status]}</strong>
         </span>
         {visit.finalizedAt && <span>انتهت: {formatClinicDateTime(visit.finalizedAt, zone)}</span>}
-        {editable && (
-          <button type="button" onClick={() => void finalize()}>
+        {editable && !confirming && (
+          <button type="button" onClick={() => setConfirming(true)}>
             إنهاء الزيارة
           </button>
+        )}
+        {editable && confirming && (
+          <span className="actions" role="alertdialog" aria-label="تأكيد إنهاء الزيارة">
+            <span>إنهاء الزيارة نهائي: لن يمكن تعديلها بعد ذلك إلا بالتصحيح المراقَب. هل تريد المتابعة؟</span>
+            <button type="button" onClick={() => void finalize()}>
+              تأكيد الإنهاء
+            </button>
+            <button type="button" onClick={() => setConfirming(false)}>
+              رجوع
+            </button>
+          </span>
         )}
       </div>
       <ErrorBanner error={error} />

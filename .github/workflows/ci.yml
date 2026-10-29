@@ -1,0 +1,166 @@
+# Pull-request pipeline, also reused by the main/release pipeline (DEPLOYMENT_ARCHITECTURE.md §2.2, §2.8).
+# Third-party actions pinned by commit SHA; minimum GITHUB_TOKEN permissions; fork PRs get no secrets (none are used here).
+name: ci
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  CLINIC_TEST_PG_ADMIN: "Host=localhost;Port=5432;Username=postgres;Database=postgres"
+
+jobs:
+  backend:
+    name: backend (build, architecture, integration on real PostgreSQL, migrations, grants, contract)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust   # ephemeral CI container only
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with: { global-json-file: global.json }
+      - name: PostgreSQL 18 client tools (pg_dump / pg_restore for the restore drill)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -q && sudo apt-get install -yq postgresql-client-18 age
+      - run: dotnet restore Clinic.sln
+      - name: build (warnings as errors)
+        run: dotnet build Clinic.sln --no-restore -c Release
+      - name: model / migration sync (no model change without a migration)
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --project src/Clinic.Persistence --startup-project src/Clinic.Persistence --no-build --configuration Release
+      - name: tests (architecture, integration, migration safety, grants, role matrix, privacy, OpenAPI contract drift, backup/restore drill)
+        env:
+          CLINIC_PG_BIN: /usr/lib/postgresql/18/bin
+        run: dotnet test --solution Clinic.sln --no-build -c Release
+      - name: idempotent migration script (attached for review)
+        run: dotnet ef migrations script --idempotent --project src/Clinic.Persistence --startup-project src/Clinic.Persistence --no-build --configuration Release -o migrations.sql
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: migrations-sql, path: migrations.sql, retention-days: 14 }
+
+  frontend:
+    name: frontend (security lint, unit tests, type check, production build)
+    runs-on: ubuntu-24.04
+    defaults: { run: { working-directory: src/web } }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: "24", cache: npm, cache-dependency-path: src/web/package-lock.json }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run typecheck
+      - run: npm run build
+
+  security:
+    name: security (gitleaks, NuGet + npm vulnerabilities, Dockerfile lint)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0 }
+      - name: gitleaks (pinned release, checksum verified)
+        run: |
+          curl -fsSL -o gl.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          curl -fsSL -o gl.txt https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt
+          grep linux_x64.tar.gz gl.txt | sed 's/gitleaks_8.30.1_linux_x64.tar.gz/gl.tgz/' | sha256sum -c -
+          tar -xzf gl.tgz gitleaks
+          ./gitleaks git --redact --no-banner --exit-code 1 .
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with: { global-json-file: global.json }
+      - name: NuGet vulnerabilities (direct + transitive, fail on any)
+        run: |
+          dotnet restore Clinic.sln
+          dotnet list Clinic.sln package --vulnerable --include-transitive 2>&1 | tee vuln.txt
+          ! grep -qE "^\s+>\s" vuln.txt
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: "24" }
+      - name: npm audit (high and critical fail)
+        working-directory: src/web
+        run: npm audit --audit-level=high
+      - uses: hadolint/hadolint-action@06be81baf89a55ffd0e24b8f04a4185738dd3387 # v3.5.0
+        with: { recursive: true, dockerfile: "deploy/docker/Dockerfile.*", failure-threshold: warning }
+
+  codeql:
+    name: CodeQL (C# and JavaScript/TypeScript)
+    runs-on: ubuntu-24.04
+    permissions: { contents: read, security-events: write }
+    strategy:
+      matrix: { language: [csharp, javascript-typescript] }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: matrix.language == 'csharp'
+        with: { global-json-file: global.json }
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with: { languages: "${{ matrix.language }}", build-mode: "${{ matrix.language == 'csharp' && 'manual' || 'none' }}" }
+      - if: matrix.language == 'csharp'
+        run: dotnet build Clinic.sln -c Release
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+
+  images:
+    name: images (build without push, Trivy critical-with-fix gate, SBOM)
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix: { image: [web, backend, migrator, backup] }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deploy/docker/Dockerfile.${{ matrix.image }}
+          load: true
+          push: false
+          tags: clinic-${{ matrix.image }}:ci
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with: { image-ref: "clinic-${{ matrix.image }}:ci", severity: CRITICAL, ignore-unfixed: true, exit-code: "1" }
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with: { image: "clinic-${{ matrix.image }}:ci", format: spdx-json, artifact-name: "sbom-${{ matrix.image }}.spdx.json" }
+
+  backup:
+    name: backup + restore drill scripts (real backup.sh / restore-drill.sh, test keys only)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+        env: { POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with: { global-json-file: global.json }
+      - run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -q && sudo apt-get install -yq postgresql-client-18 age
+      - run: PATH=/usr/lib/postgresql/18/bin:$PATH PGHOST=localhost PGUSER=postgres bash deploy/backup/test-backup.sh
+
+  compose-smoke:
+    name: production-like compose (F5.21)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: sudo apt-get update -q && sudo apt-get install -yq age
+      - run: bash deploy/local/run-compose-smoke.sh

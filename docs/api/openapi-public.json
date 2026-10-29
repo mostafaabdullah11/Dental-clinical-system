@@ -1,0 +1,206 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Clinic.Api | public",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://localhost/"
+    }
+  ],
+  "paths": {
+    "/api/public/feedback/{token}": {
+      "get": {
+        "tags": [
+          "PublicFeedbackEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFeedbackFormDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "PublicFeedbackEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicFeedbackSubmission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFeedbackAcknowledgementDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PublicFeedbackAcknowledgementDto": {
+        "required": [
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicFeedbackFormDefinition": {
+        "required": [
+          "title",
+          "ratingLabel",
+          "ratingMin",
+          "ratingMax",
+          "commentLabel",
+          "commentMaxLength",
+          "submitLabel"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "ratingLabel": {
+            "type": "string"
+          },
+          "ratingMin": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ratingMax": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "commentLabel": {
+            "type": "string"
+          },
+          "commentMaxLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "submitLabel": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicFeedbackFormDto": {
+        "required": [
+          "state",
+          "doctorName",
+          "form"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "doctorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "form": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicFeedbackFormDefinition"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicFeedbackSubmission": {
+        "required": [
+          "rating",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "rating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "PublicFeedbackEndpoints"
+    }
+  ]
+}

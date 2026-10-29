@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Clinic.Migrator</AssemblyName>
+    <RootNamespace>Clinic.Migrator</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clinic.Persistence\Clinic.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

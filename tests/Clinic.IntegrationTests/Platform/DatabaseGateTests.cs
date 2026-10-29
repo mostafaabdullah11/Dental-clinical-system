@@ -335,7 +335,7 @@ public sealed class DatabaseGateTests(ApiFixture fixture)
                 "Crm_Referrals", "Scheduling_Initial", "Clinical_Initial", "Prescriptions_Initial", "Orthodontics_Initial",
                 "Finance_FixedLabInitial", "Feedback_Initial", "Xref_Task3ForeignKeys", "Identity_Task3Permissions", "Notifications_Task3Grants",
                 "Configuration_Task4", "Staff_Attendance", "Finance_Ledger", "Orthodontics_Installments", "Payroll_Initial", "Expenses_Initial",
-                "Xref_Task4ForeignKeys", "Identity_Task4Permissions"],
+                "Xref_Task4ForeignKeys", "Identity_Task4Permissions", "Infra_BackupGrants"],
             applied.Select(m => m[15..]));
     }
 }

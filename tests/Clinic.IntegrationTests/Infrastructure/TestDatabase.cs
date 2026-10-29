@@ -37,8 +37,36 @@ public sealed class TestDatabase : IAsyncDisposable
         }
 
         var database = new TestDatabase(admin, "clinic_test_" + Guid.NewGuid().ToString("N")[..12]);
-        await database.BootstrapAsync();
-        await database.MigrateAsync(targetMigration);
+        try
+        {
+            await database.BootstrapAsync();
+            await database.MigrateAsync(targetMigration);
+        }
+        catch
+        {
+            await database.TryDisposeAsync(); // never leak a half-built database; the original exception still propagates
+            throw;
+        }
+
+        return database;
+    }
+
+    /// <summary>Roles bootstrapped and the database created, but no migration applied (a restore target).</summary>
+    public static async Task<TestDatabase> CreateEmptyAsync()
+    {
+        var admin = Environment.GetEnvironmentVariable(AdminVariable)
+                    ?? throw new InvalidOperationException($"{AdminVariable} is not set.");
+        var database = new TestDatabase(admin, "clinic_test_" + Guid.NewGuid().ToString("N")[..12]);
+        try
+        {
+            await database.BootstrapAsync();
+        }
+        catch
+        {
+            await database.TryDisposeAsync();
+            throw;
+        }
+
         return database;
     }
 
@@ -101,6 +129,19 @@ public sealed class TestDatabase : IAsyncDisposable
         catch (PostgresException e)
         {
             return e.SqlState;
+        }
+    }
+
+    /// <summary>Best-effort cleanup after a failed setup: a cleanup failure must not replace the setup failure.</summary>
+    private async Task TryDisposeAsync()
+    {
+        try
+        {
+            await DisposeAsync();
+        }
+        catch (NpgsqlException)
+        {
+            // the server may be unreachable, which is usually why setup failed
         }
     }
 

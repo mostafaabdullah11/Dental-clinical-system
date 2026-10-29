@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <!-- The suite drives the real artefacts as separate processes (API, Worker, migrator) behind the real Caddy binary;
+       these references only guarantee they are built first. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Clinic.Api\Clinic.Api.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Clinic.Worker\Clinic.Worker.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Clinic.Migrator\Clinic.Migrator.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

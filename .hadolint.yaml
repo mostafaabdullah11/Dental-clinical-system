@@ -1,0 +1,7 @@
+# Dockerfile lint policy (DEPLOYMENT_ARCHITECTURE.md §2.2 "security" job; failure threshold: warning).
+# Reviewed exception, documented in docs/TASK5_FINAL_AUDIT.md:
+#   DL3018 (pin apk package versions): every base image is pinned by DIGEST and rebuilt weekly by Dependabot; the few apk
+#   packages (age, bash, curl, coreutils, libcap) come from the repository of that pinned base. Exact apk pins would break
+#   rebuilds as soon as Alpine retires the old package revision, which defeats the scheduled security rebuild.
+ignored:
+  - DL3018

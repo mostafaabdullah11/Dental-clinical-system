@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    DEVELOPMENT / DEMO ONLY. Never published, never part of a container image (the Dockerfiles copy src/ only).
+    It hosts the real API in-process and plays a scripted clinic history through the real HTTP endpoints with a
+    controllable clock, so every business rule, audit entry and ledger invariant applies to the demo data too.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Clinic.DemoSeed</AssemblyName>
+    <RootNamespace>Clinic.DemoSeed</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Clinic.Api\Clinic.Api.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\deploy\db\*.sql" Link="deploy-db\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import {
-  appointmentKindLabels, appointmentStatusLabels, isOpenAppointment,
+  appointmentKindLabels, isOpenAppointment,
   type AppointmentKind, type AvailabilitySlots, type SalesAppointment,
 } from '../api/task3';
 import { useAuth } from '../auth/AuthContext';
 import { ErrorBanner, Field } from '../components/Form';
+import { AppointmentStatusBadge } from '../components/ui';
 import { DoctorSelect, PatientPicker, type PickedPatient } from '../components/Pickers';
 import { addDays, clinicDayStartIso, clinicLocalToIso, clinicToday, formatClinicTime, formatDate } from '../lib/time';
 import { useLoad } from '../lib/useLoad';
@@ -107,7 +108,7 @@ function AppointmentRow({ appointment: a, onChanged }: { appointment: SalesAppoi
         </td>
         <td>{appointmentKindLabels[a.kind]}</td>
         <td>
-          {appointmentStatusLabels[a.status]}
+          <AppointmentStatusBadge status={a.status} />
           {a.previousAppointmentId && <div className="hint">بديل لموعد سابق</div>}
         </td>
         <td>{a.arrivedAt ? `حضر ${formatClinicTime(a.arrivedAt, zone)}` : '—'}</td>

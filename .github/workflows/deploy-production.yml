@@ -1,0 +1,58 @@
+# Production release (DEPLOYMENT_ARCHITECTURE.md §2.3, §2.4, §2.7). Builds NOTHING: it resolves the digests of images
+# already built for <sha>, requires that exact commit to have a successful staging deployment, waits for the required
+# reviewer on the `production` environment, and deploys over the forced-command SSH key. One production deploy at a time.
+# Manual rollback = run this workflow with the previous release's <sha> (only the immediately previous release is
+# guaranteed compatible). The database is never downgraded.
+name: deploy-production
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit SHA already built by `release` and deployed to staging"
+        required: true
+
+permissions:
+  contents: read
+  deployments: read
+  packages: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: production
+    steps:
+      - name: validate input
+        run: '[[ "${{ inputs.sha }}" =~ ^[0-9a-f]{40}$ ]] || { echo "sha must be a full 40-character commit SHA"; exit 1; }'
+      - name: require a successful staging deployment of this exact commit
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          ids=$(gh api "repos/${{ github.repository }}/deployments?environment=staging&sha=${{ inputs.sha }}" --jq '.[].id')
+          for id in $ids; do
+            gh api "repos/${{ github.repository }}/deployments/${id}/statuses" --jq '.[].state' | grep -qx success && exit 0
+          done
+          echo "commit ${{ inputs.sha }} has no successful staging deployment"; exit 1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - name: resolve the already-built digests (no rebuild)
+        id: digests
+        run: |
+          for i in web backend migrator backup; do
+            d=$(docker buildx imagetools inspect "ghcr.io/${{ github.repository_owner }}/clinic-${i}:sha-${{ inputs.sha }}" --format '{{json .Manifest}}' | jq -r .digest)
+            [[ "$d" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "no image for ${i}"; exit 1; }
+            echo "${i}=ghcr.io/${{ github.repository_owner }}/clinic-${i}@${d}" >> "$GITHUB_OUTPUT"
+          done
+      - name: deploy over the forced-command SSH key
+        env:
+          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=yes "deploy@${{ vars.PRODUCTION_HOST }}" \
+            "web=${{ steps.digests.outputs.web }} backend=${{ steps.digests.outputs.backend }} migrator=${{ steps.digests.outputs.migrator }} backup=${{ steps.digests.outputs.backup }}"

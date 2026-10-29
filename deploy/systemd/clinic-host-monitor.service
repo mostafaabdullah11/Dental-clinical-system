@@ -1,0 +1,7 @@
+# Host checks every 5 minutes (DEPLOYMENT_ARCHITECTURE.md §3.5).
+[Unit]
+Description=Clinic host monitor (heartbeat pings, no personal data)
+
+[Service]
+Type=oneshot
+ExecStart=/opt/clinic/deploy/scripts/host-monitor.sh

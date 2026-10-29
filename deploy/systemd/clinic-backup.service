@@ -1,0 +1,11 @@
+# Nightly independent logical backup at a fixed UTC time (DEPLOYMENT_ARCHITECTURE.md §3.3; DST never moves it).
+[Unit]
+Description=Clinic nightly encrypted logical backup
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/clinic
+ExecStart=/usr/bin/docker compose -f /opt/clinic/deploy/compose/docker-compose.prod.yml --env-file /opt/clinic/env/clinic.env --env-file /opt/clinic/env/release.env --profile backup run --rm backup
+TimeoutStartSec=3h

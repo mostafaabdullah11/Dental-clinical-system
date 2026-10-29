@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1.7
+# clinic-backup: the one-shot nightly independent logical backup (DEPLOYMENT_ARCHITECTURE.md §3.3 layer 2).
+# pg_dump (PostgreSQL 18 client) + age (client-side encryption to TWO public recipients) + curl (S3-compatible PUT with
+# AWS SigV4, write-only credentials). Holds NO private key. Runs as the unprivileged `postgres` user of the base image.
+# The integrity / manifest SQL is the same file the application and the restore drill use (single source of truth).
+
+FROM postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+RUN apk add --no-cache age bash curl coreutils
+COPY --chmod=0555 deploy/backup/backup.sh /usr/local/bin/clinic-backup
+COPY --chmod=0444 src/Clinic.Persistence/Operations/integrity-checks.sql /opt/clinic-backup/sql/integrity-checks.sql
+COPY --chmod=0444 src/Clinic.Persistence/Operations/backup-manifest.sql /opt/clinic-backup/sql/backup-manifest.sql
+ENV TZ=UTC
+# 70 = the base image's unprivileged `postgres` user
+USER 70
+WORKDIR /tmp
+ENTRYPOINT ["/usr/local/bin/clinic-backup"]

@@ -1,0 +1,4138 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Clinic.Api | doctor",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://localhost/"
+    }
+  ],
+  "paths": {
+    "/api/doctor/patients/search": {
+      "post": {
+        "tags": [
+          "DoctorPatientEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfDoctorPatientListItem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}": {
+      "get": {
+        "tags": [
+          "DoctorPatientEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorPatientDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}/medical-history": {
+      "get": {
+        "tags": [
+          "DoctorPatientEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorPatientMedicalHistoryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}/timeline": {
+      "get": {
+        "tags": [
+          "DoctorPatientEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PatientTimelineEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}/clinical-profile": {
+      "put": {
+        "tags": [
+          "DoctorPatientEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClinicalProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/doctor/appointments": {
+      "get": {
+        "tags": [
+          "DoctorScheduleEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorAppointmentDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/queue": {
+      "get": {
+        "tags": [
+          "DoctorScheduleEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorQueueItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/schedule": {
+      "get": {
+        "tags": [
+          "DoctorScheduleEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "weekStart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorScheduleDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/appointments/{id}/reschedule": {
+      "post": {
+        "tags": [
+          "DoctorScheduleEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorRescheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorAppointmentDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/procedure-types": {
+      "get": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProcedureTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}/visits": {
+      "get": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VisitListItemDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}/treatment-cases": {
+      "get": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CaseSummaryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/treatment-cases/{id}": {
+      "get": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{id}": {
+      "get": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVisitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits": {
+      "post": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartVisitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{id}/finalize": {
+      "post": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/corrections": {
+      "post": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/treatments": {
+      "post": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddTreatmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/treatments/{recordId}": {
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTreatmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/cases/{caseId}/status": {
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/cases/{caseId}/steps/{stepCode}/complete": {
+      "post": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "stepCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/cases/{caseId}/canal-measurements": {
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CanalMeasurementsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/cases/{caseId}/implant": {
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImplantDetailsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/treatment-records/{recordId}/pricing": {
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "recordId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/work-items/{id}/pricing": {
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PriceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/pricing-lines/{lineId}/discount": {
+      "put": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "lineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/appointments/follow-up": {
+      "post": {
+        "tags": [
+          "DoctorClinicalEndpoints"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpAppointmentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedIdDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}/prescriptions": {
+      "get": {
+        "tags": [
+          "PrescriptionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PrescriptionDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/prescriptions/{id}": {
+      "get": {
+        "tags": [
+          "PrescriptionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrescriptionDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "PrescriptionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePrescriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrescriptionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/prescriptions/{id}/print": {
+      "get": {
+        "tags": [
+          "PrescriptionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrescriptionPrintModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/prescriptions": {
+      "post": {
+        "tags": [
+          "PrescriptionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePrescriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrescriptionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/prescriptions/{id}/corrections": {
+      "post": {
+        "tags": [
+          "PrescriptionEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectPrescriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrescriptionDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/orthodontic-cases": {
+      "post": {
+        "tags": [
+          "OrthodonticsModule"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrthoCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrthoCaseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/orthodontic-cases/{id}": {
+      "get": {
+        "tags": [
+          "OrthodonticsModule"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrthoCaseView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/fixed-lab/{caseId}": {
+      "post": {
+        "tags": [
+          "FinanceModule"
+        ],
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetInitialFixedLabRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedLabDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "FinanceModule"
+        ],
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FixedLabDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/me/work-items": {
+      "get": {
+        "tags": [
+          "DoctorFinanceEndpoints"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorOwnWorkDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/me/work-items/{id}": {
+      "get": {
+        "tags": [
+          "DoctorFinanceEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorOwnWorkDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/visits/{visitId}/referrals": {
+      "post": {
+        "tags": [
+          "DoctorReferralEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "visitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReferralRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorReferralDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/patients/{id}/referrals": {
+      "get": {
+        "tags": [
+          "DoctorReferralEndpoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorReferralDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doctor/me/payroll": {
+      "get": {
+        "tags": [
+          "Clinic.Api"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DoctorPayrollDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddTreatmentRequest": {
+        "required": [
+          "caseId",
+          "procedureCode",
+          "teeth",
+          "area",
+          "details"
+        ],
+        "type": "object",
+        "properties": {
+          "caseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "procedureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "teeth": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "area": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdjustmentDto": {
+        "required": [
+          "kind",
+          "amount",
+          "reason",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amount": {
+            "format": "double"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgeDisplay": {
+        "required": [
+          "kind",
+          "years",
+          "recordedOn"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "years": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "recordedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AvailabilityRangeDto": {
+        "required": [
+          "id",
+          "date",
+          "start",
+          "end"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "start": {
+            "type": "string",
+            "format": "time"
+          },
+          "end": {
+            "type": "string",
+            "format": "time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CanalMeasurementInput": {
+        "required": [
+          "canalNumber",
+          "lengthMm"
+        ],
+        "type": "object",
+        "properties": {
+          "canalNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lengthMm": {
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CanalMeasurementsRequest": {
+        "required": [
+          "canals"
+        ],
+        "type": "object",
+        "properties": {
+          "canals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CanalMeasurementInput"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CaseDetailDto": {
+        "required": [
+          "case",
+          "visits",
+          "steps",
+          "measurements",
+          "implant"
+        ],
+        "type": "object",
+        "properties": {
+          "case": {
+            "$ref": "#/components/schemas/CaseSummaryDto"
+          },
+          "visits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseVisitDto"
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepDto"
+            }
+          },
+          "measurements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasurementDto"
+            }
+          },
+          "implant": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImplantDto"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CaseStatusRequest": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CaseSummaryDto": {
+        "required": [
+          "id",
+          "procedureCode",
+          "procedureName",
+          "status",
+          "teeth",
+          "area",
+          "details",
+          "labModel",
+          "startedBy",
+          "startedAt",
+          "completedAt",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "procedureCode": {
+            "type": "string"
+          },
+          "procedureName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "teeth": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "area": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "details": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "labModel": {
+            "type": "string"
+          },
+          "startedBy": {
+            "$ref": "#/components/schemas/ClinicalDoctorRefDto"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CaseVisitDto": {
+        "required": [
+          "visitId",
+          "recordId",
+          "doctor",
+          "startedAt",
+          "visitStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "visitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recordId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/ClinicalDoctorRefDto"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "visitStatus": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClinicalDoctorRefDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClinicalPatientDto": {
+        "required": [
+          "id",
+          "patientCode",
+          "fullName",
+          "ageDisplay"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "ageDisplay": {
+            "$ref": "#/components/schemas/AgeDisplay"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConsultationLineDto": {
+        "required": [
+          "lineId",
+          "fee",
+          "discount",
+          "entrySeq"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string"
+          },
+          "fee": {
+            "format": "double"
+          },
+          "discount": {
+            "format": "double"
+          },
+          "entrySeq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorrectionRequest": {
+        "required": [
+          "recordType",
+          "recordId",
+          "clinicalNotes",
+          "teeth",
+          "area",
+          "details",
+          "stepStatus",
+          "lengthMm",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "recordType": {
+            "type": "string"
+          },
+          "recordId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "clinicalNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "teeth": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "area": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "stepStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lengthMm": {
+            "format": "double"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CorrectPrescriptionRequest": {
+        "required": [
+          "generalNotes",
+          "items",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "generalNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MedicationItemInput"
+            }
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatedIdDto": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateOrthoCaseRequest": {
+        "required": [
+          "area",
+          "applianceType",
+          "grossTotalPrice",
+          "depositAmount",
+          "numberOfMonths"
+        ],
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "applianceType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "grossTotalPrice": {
+            "format": "double"
+          },
+          "depositAmount": {
+            "format": "double"
+          },
+          "numberOfMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateReferralRequest": {
+        "required": [
+          "referralType",
+          "reason",
+          "notes",
+          "followUpInstructions"
+        ],
+        "type": "object",
+        "properties": {
+          "referralType": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "followUpInstructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CurrentDoctorDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DiscountRequest": {
+        "required": [
+          "discount",
+          "expectedEntrySeq"
+        ],
+        "type": "object",
+        "properties": {
+          "discount": {
+            "format": "double"
+          },
+          "expectedEntrySeq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorAppointmentDto": {
+        "required": [
+          "id",
+          "patient",
+          "startAt",
+          "durationMinutes",
+          "effectiveEndAt",
+          "status",
+          "reason",
+          "kind",
+          "arrivedAt",
+          "canReschedule",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/DoctorPatientRefDto"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "effectiveEndAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "arrivedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "canReschedule": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorOwnWorkDto": {
+        "required": [
+          "chargeId",
+          "workItemId",
+          "treatmentCaseId",
+          "visitId",
+          "patient",
+          "procedureName",
+          "chargedAt",
+          "originalPrice",
+          "discount",
+          "finalPrice",
+          "collected",
+          "remaining",
+          "doctorPercentage",
+          "entitled",
+          "recognized",
+          "pendingEntitlement",
+          "clinicShare",
+          "lab",
+          "labModel",
+          "labCoveredSoFar",
+          "fixedLabAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "chargeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "treatmentCaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/FinancePatientRef"
+          },
+          "procedureName": {
+            "type": "string"
+          },
+          "chargedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "originalPrice": {
+            "format": "double"
+          },
+          "discount": {
+            "format": "double"
+          },
+          "finalPrice": {
+            "format": "double"
+          },
+          "collected": {
+            "format": "double"
+          },
+          "remaining": {
+            "format": "double"
+          },
+          "doctorPercentage": {
+            "format": "double"
+          },
+          "entitled": {
+            "format": "double"
+          },
+          "recognized": {
+            "format": "double"
+          },
+          "pendingEntitlement": {
+            "format": "double"
+          },
+          "clinicShare": {
+            "format": "double"
+          },
+          "lab": {
+            "format": "double"
+          },
+          "labModel": {
+            "type": "string"
+          },
+          "labCoveredSoFar": {
+            "format": "double"
+          },
+          "fixedLabAmount": {
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorPatientDto": {
+        "required": [
+          "id",
+          "patientCode",
+          "fullName",
+          "ageDisplay",
+          "dateOfBirth",
+          "chiefComplaint",
+          "isActive",
+          "registeredAt",
+          "currentDoctor"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "ageDisplay": {
+            "$ref": "#/components/schemas/AgeDisplay"
+          },
+          "dateOfBirth": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "chiefComplaint": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currentDoctor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CurrentDoctorDto"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorPatientListItem": {
+        "required": [
+          "id",
+          "patientCode",
+          "fullName",
+          "ageDisplay"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "ageDisplay": {
+            "$ref": "#/components/schemas/AgeDisplay"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorPatientMedicalHistoryDto": {
+        "required": [
+          "patientId",
+          "hasAllergy",
+          "hasHypertension",
+          "hasViralHepatitis",
+          "hasDiabetes",
+          "hasKidneyProblems",
+          "hasBleedingOrClottingProblem",
+          "hasHeartProblems",
+          "hasRheumaticDisease",
+          "isSmoker",
+          "hasPreviousSurgicalOperations",
+          "isTakingMedications",
+          "lastDentalVisit",
+          "isPregnant",
+          "isBreastfeeding",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hasAllergy": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasHypertension": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasViralHepatitis": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasDiabetes": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasKidneyProblems": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasBleedingOrClottingProblem": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasHeartProblems": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasRheumaticDisease": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "isSmoker": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "hasPreviousSurgicalOperations": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "isTakingMedications": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "lastDentalVisit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isPregnant": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "isBreastfeeding": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorPatientRefDto": {
+        "required": [
+          "id",
+          "patientCode",
+          "fullName",
+          "ageDisplay"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "ageDisplay": {
+            "$ref": "#/components/schemas/AgeDisplay"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorPayrollDto": {
+        "required": [
+          "id",
+          "doctorId",
+          "doctorName",
+          "periodStart",
+          "periodEnd",
+          "revenueTotal",
+          "labTotal",
+          "doctorShareTotal",
+          "clinicShareTotal",
+          "adjustmentsTotal",
+          "finalAmount",
+          "status",
+          "finalizedAt",
+          "paidAt",
+          "itemCount",
+          "adjustments"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctorName": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "revenueTotal": {
+            "format": "double"
+          },
+          "labTotal": {
+            "format": "double"
+          },
+          "doctorShareTotal": {
+            "format": "double"
+          },
+          "clinicShareTotal": {
+            "format": "double"
+          },
+          "adjustmentsTotal": {
+            "format": "double"
+          },
+          "finalAmount": {
+            "format": "double"
+          },
+          "status": {
+            "type": "string"
+          },
+          "finalizedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "paidAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "itemCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "adjustments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdjustmentDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorQueueItemDto": {
+        "required": [
+          "appointmentId",
+          "patient",
+          "reason",
+          "startAt",
+          "durationMinutes",
+          "arrivedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "appointmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/DoctorPatientRefDto"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "arrivedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorReferralDto": {
+        "required": [
+          "id",
+          "referralType",
+          "reason",
+          "notes",
+          "followUpInstructions",
+          "status",
+          "referringDoctor",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referralType": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "followUpInstructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "referringDoctor": {
+            "$ref": "#/components/schemas/ReferralDoctorDto"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorRescheduleRequest": {
+        "required": [
+          "startAt",
+          "durationMinutes",
+          "rescheduleReason"
+        ],
+        "type": "object",
+        "properties": {
+          "startAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "rescheduleReason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoctorScheduleDto": {
+        "required": [
+          "weekStart",
+          "published",
+          "ranges",
+          "appointments"
+        ],
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "published": {
+            "type": "boolean"
+          },
+          "ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityRangeDto"
+            }
+          },
+          "appointments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoctorAppointmentDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "FinancePatientRef": {
+        "required": [
+          "id",
+          "patientCode",
+          "fullName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientCode": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FixedLabDto": {
+        "required": [
+          "treatmentCaseId",
+          "entered",
+          "currentAmount",
+          "revisionNumber",
+          "enteredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "treatmentCaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entered": {
+            "type": "boolean"
+          },
+          "currentAmount": {
+            "format": "double"
+          },
+          "revisionNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "enteredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FollowUpAppointmentBody": {
+        "required": [
+          "visitId",
+          "startAt",
+          "durationMinutes",
+          "reason",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "visitId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "startAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "durationMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "kind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ImplantDetailsRequest": {
+        "required": [
+          "hasBoneGraft",
+          "hasMembrane",
+          "procedureDate",
+          "healingMonths"
+        ],
+        "type": "object",
+        "properties": {
+          "hasBoneGraft": {
+            "type": "boolean"
+          },
+          "hasMembrane": {
+            "type": "boolean"
+          },
+          "procedureDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "healingMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ImplantDto": {
+        "required": [
+          "hasBoneGraft",
+          "hasMembrane",
+          "procedureDate",
+          "healingMonths"
+        ],
+        "type": "object",
+        "properties": {
+          "hasBoneGraft": {
+            "type": "boolean"
+          },
+          "hasMembrane": {
+            "type": "boolean"
+          },
+          "procedureDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "healingMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InstallmentView": {
+        "required": [
+          "id",
+          "number",
+          "origin",
+          "dueDate",
+          "amount",
+          "amountAlreadyPaid",
+          "remaining",
+          "status",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount": {
+            "format": "double"
+          },
+          "amountAlreadyPaid": {
+            "format": "double"
+          },
+          "remaining": {
+            "format": "double"
+          },
+          "status": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "JsonElement": {},
+      "MeasurementDto": {
+        "required": [
+          "id",
+          "canalNumber",
+          "lengthMm",
+          "recordedInVisitId",
+          "recordedBy",
+          "recordedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "canalNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lengthMm": {
+            "format": "double"
+          },
+          "recordedInVisitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recordedBy": {
+            "$ref": "#/components/schemas/ClinicalDoctorRefDto"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MedicationItemDto": {
+        "required": [
+          "id",
+          "sortOrder",
+          "medicationName",
+          "dosage",
+          "frequency",
+          "duration",
+          "instructions"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "medicationName": {
+            "type": "string"
+          },
+          "dosage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "frequency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "duration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "MedicationItemInput": {
+        "required": [
+          "id",
+          "medicationName",
+          "dosage",
+          "frequency",
+          "duration",
+          "instructions"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "medicationName": {
+            "type": "string"
+          },
+          "dosage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "frequency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "duration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrthoAllocationView": {
+        "required": [
+          "allocationId",
+          "allocatedAt",
+          "amount",
+          "applied",
+          "available"
+        ],
+        "type": "object",
+        "properties": {
+          "allocationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "allocatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "amount": {
+            "format": "double"
+          },
+          "applied": {
+            "format": "double"
+          },
+          "available": {
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrthoCaseDto": {
+        "required": [
+          "treatmentCaseId",
+          "area",
+          "applianceType",
+          "terms",
+          "chargeEstablished"
+        ],
+        "type": "object",
+        "properties": {
+          "treatmentCaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "area": {
+            "type": "string"
+          },
+          "applianceType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "terms": {
+            "$ref": "#/components/schemas/OrthoTermsDto"
+          },
+          "chargeEstablished": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrthoCaseView": {
+        "required": [
+          "treatmentCaseId",
+          "area",
+          "applianceType",
+          "terms",
+          "chargeEstablished",
+          "chargeId",
+          "grossTotal",
+          "discount",
+          "effectiveOrthoTotal",
+          "collected",
+          "outstanding",
+          "depositPaid",
+          "unappliedCollections",
+          "scheduleDifference",
+          "monthPlanDifference",
+          "requiresScheduleAdjustment",
+          "installments",
+          "history",
+          "allocations",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "treatmentCaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "area": {
+            "type": "string"
+          },
+          "applianceType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "terms": {
+            "$ref": "#/components/schemas/OrthoTermsView"
+          },
+          "chargeEstablished": {
+            "type": "boolean"
+          },
+          "chargeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "grossTotal": {
+            "format": "double"
+          },
+          "discount": {
+            "format": "double"
+          },
+          "effectiveOrthoTotal": {
+            "format": "double"
+          },
+          "collected": {
+            "format": "double"
+          },
+          "outstanding": {
+            "format": "double"
+          },
+          "depositPaid": {
+            "format": "double"
+          },
+          "unappliedCollections": {
+            "format": "double"
+          },
+          "scheduleDifference": {
+            "format": "double"
+          },
+          "monthPlanDifference": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requiresScheduleAdjustment": {
+            "type": "boolean"
+          },
+          "installments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallmentView"
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallmentView"
+            }
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrthoAllocationView"
+            }
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrthoTermsDto": {
+        "required": [
+          "revisionNumber",
+          "grossTotalPrice",
+          "depositAmount",
+          "numberOfMonths",
+          "enteredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "revisionNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "grossTotalPrice": {
+            "format": "double"
+          },
+          "depositAmount": {
+            "format": "double"
+          },
+          "numberOfMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "enteredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OrthoTermsView": {
+        "required": [
+          "revisionNumber",
+          "grossTotalPrice",
+          "depositAmount",
+          "numberOfMonths",
+          "enteredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "revisionNumber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "grossTotalPrice": {
+            "format": "double"
+          },
+          "depositAmount": {
+            "format": "double"
+          },
+          "numberOfMonths": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "enteredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OwnPricingDto": {
+        "required": [
+          "workItemId",
+          "lineId",
+          "price",
+          "discount",
+          "entrySeq",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "workItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lineId": {
+            "type": "string"
+          },
+          "price": {
+            "format": "double"
+          },
+          "discount": {
+            "format": "double"
+          },
+          "entrySeq": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PagedResultOfDoctorPatientListItem": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoctorPatientListItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PatientSearchRequest": {
+        "required": [
+          "query",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageOrDefault": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSizeOrDefault": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PatientTimelineEntry": {
+        "required": [
+          "kind",
+          "type",
+          "occurredAt",
+          "dueDate",
+          "referenceId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "occurredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "referenceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrescriptionDoctorDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrescriptionDto": {
+        "required": [
+          "id",
+          "patientId",
+          "visitId",
+          "doctor",
+          "generalNotes",
+          "createdAt",
+          "visitFinalized",
+          "isOwn",
+          "items",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patientId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/PrescriptionDoctorDto"
+          },
+          "generalNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "visitFinalized": {
+            "type": "boolean"
+          },
+          "isOwn": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MedicationItemDto"
+            }
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrescriptionPrintModel": {
+        "required": [
+          "clinicName",
+          "clinicContact",
+          "patientName",
+          "patientCode",
+          "patientAge",
+          "doctorName",
+          "doctorSpecialty",
+          "date",
+          "generalNotes",
+          "medications"
+        ],
+        "type": "object",
+        "properties": {
+          "clinicName": {
+            "type": "string"
+          },
+          "clinicContact": {
+            "type": "string"
+          },
+          "patientName": {
+            "type": "string"
+          },
+          "patientCode": {
+            "type": "string"
+          },
+          "patientAge": {
+            "$ref": "#/components/schemas/AgeDisplay"
+          },
+          "doctorName": {
+            "type": "string"
+          },
+          "doctorSpecialty": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "generalNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "medications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MedicationItemDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriceRequest": {
+        "required": [
+          "price"
+        ],
+        "type": "object",
+        "properties": {
+          "price": {
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProcedureTypeDto": {
+        "required": [
+          "code",
+          "name",
+          "category",
+          "labModel",
+          "optionDefinition"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "labModel": {
+            "type": "string"
+          },
+          "optionDefinition": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReferralDoctorDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SavePrescriptionRequest": {
+        "required": [
+          "generalNotes",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "generalNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MedicationItemInput"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SetInitialFixedLabRequest": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StartVisitRequest": {
+        "required": [
+          "patientId",
+          "appointmentId"
+        ],
+        "type": "object",
+        "properties": {
+          "patientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "appointmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StepDto": {
+        "required": [
+          "id",
+          "stepCode",
+          "status",
+          "completedAt",
+          "completedInVisitId",
+          "completedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stepCode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completedInVisitId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "completedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClinicalDoctorRefDto"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TreatmentRecordDto": {
+        "required": [
+          "recordId",
+          "doctor",
+          "case",
+          "startedInThisVisit",
+          "steps",
+          "measurements",
+          "implant",
+          "ownPricing"
+        ],
+        "type": "object",
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/ClinicalDoctorRefDto"
+          },
+          "case": {
+            "$ref": "#/components/schemas/CaseSummaryDto"
+          },
+          "startedInThisVisit": {
+            "type": "boolean"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepDto"
+            }
+          },
+          "measurements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeasurementDto"
+            }
+          },
+          "implant": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImplantDto"
+              }
+            ]
+          },
+          "ownPricing": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OwnPricingDto"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateClinicalProfileRequest": {
+        "required": [
+          "chiefComplaint"
+        ],
+        "type": "object",
+        "properties": {
+          "chiefComplaint": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateTreatmentRequest": {
+        "required": [
+          "teeth",
+          "area",
+          "details"
+        ],
+        "type": "object",
+        "properties": {
+          "teeth": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "area": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateVisitRequest": {
+        "required": [
+          "clinicalNotes",
+          "consultationFee"
+        ],
+        "type": "object",
+        "properties": {
+          "clinicalNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "consultationFee": {
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "VisitDetailDto": {
+        "required": [
+          "id",
+          "patient",
+          "doctor",
+          "appointmentId",
+          "status",
+          "startedAt",
+          "finalizedAt",
+          "clinicalNotes",
+          "consultationFee",
+          "consultationLine",
+          "isOwn",
+          "canEdit",
+          "treatments",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/ClinicalPatientDto"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/ClinicalDoctorRefDto"
+          },
+          "appointmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finalizedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "clinicalNotes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "consultationFee": {
+            "format": "double"
+          },
+          "consultationLine": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConsultationLineDto"
+              }
+            ]
+          },
+          "isOwn": {
+            "type": "boolean"
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "treatments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TreatmentRecordDto"
+            }
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "VisitListItemDto": {
+        "required": [
+          "id",
+          "doctor",
+          "status",
+          "startedAt",
+          "finalizedAt",
+          "treatmentCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "doctor": {
+            "$ref": "#/components/schemas/ClinicalDoctorRefDto"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finalizedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "treatmentCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "DoctorPatientEndpoints"
+    },
+    {
+      "name": "DoctorScheduleEndpoints"
+    },
+    {
+      "name": "DoctorClinicalEndpoints"
+    },
+    {
+      "name": "PrescriptionEndpoints"
+    },
+    {
+      "name": "OrthodonticsModule"
+    },
+    {
+      "name": "FinanceModule"
+    },
+    {
+      "name": "DoctorFinanceEndpoints"
+    },
+    {
+      "name": "DoctorReferralEndpoints"
+    },
+    {
+      "name": "Clinic.Api"
+    }
+  ]
+}

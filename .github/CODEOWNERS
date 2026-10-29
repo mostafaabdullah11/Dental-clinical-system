@@ -1,0 +1,7 @@
+# Highest-cost paths need an owner review (DEPLOYMENT_ARCHITECTURE.md §2.1). Replace the handle with the system owner.
+/src/Clinic.Persistence/Migrations/        @OWNER_HANDLE
+/src/Clinic.Persistence/CrossModuleReferences.cs  @OWNER_HANDLE
+/src/Clinic.SharedKernel/Security/          @OWNER_HANDLE
+/src/Modules/Clinic.Modules.Finance/        @OWNER_HANDLE
+/deploy/                                    @OWNER_HANDLE
+/.github/workflows/                         @OWNER_HANDLE

@@ -1,0 +1,64 @@
+# Nightly (and on demand): browser E2E with Playwright against the real application (privacy canaries, XSS, role journeys),
+# the production-like compose smoke, and — when staging exists — the advisory OWASP ZAP baseline against staging
+# (DEPLOYMENT_ARCHITECTURE.md §2.2, §2.9). Required gate before a production release.
+name: nightly
+
+on:
+  schedule: [{ cron: "0 2 * * *" }]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CLINIC_TEST_PG_ADMIN: "Host=localhost;Port=5432;Username=postgres;Database=postgres"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+        env: { POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with: { global-json-file: global.json }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: "24", cache: npm, cache-dependency-path: src/web/package-lock.json }
+      - run: npm ci --no-audit --no-fund && npm run build
+        working-directory: src/web
+      - run: dotnet build tests/Clinic.E2ETests -c Release
+      - name: Playwright browser
+        run: pwsh tests/Clinic.E2ETests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+      - name: Caddy (pinned release, checksum verified)
+        run: |
+          curl -fsSL -o caddy.tgz https://github.com/caddyserver/caddy/releases/download/v2.10.2/caddy_2.10.2_linux_amd64.tar.gz
+          curl -fsSL -o caddy.txt https://github.com/caddyserver/caddy/releases/download/v2.10.2/caddy_2.10.2_checksums.txt
+          grep linux_amd64.tar.gz caddy.txt | sed 's/caddy_2.10.2_linux_amd64.tar.gz/caddy.tgz/' | sha256sum -c -
+          tar -xzf caddy.tgz caddy
+          echo "CLINIC_E2E_CADDY=$PWD/caddy" >> "$GITHUB_ENV"
+      - name: E2E
+        env: { CLINIC_E2E_BROWSER_CHANNEL: chromium, CLINIC_E2E_REQUIRED: "1" }
+        run: dotnet test --project tests/Clinic.E2ETests --no-build -c Release
+
+  compose-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: sudo apt-get update -q && sudo apt-get install -yq age
+      - run: bash deploy/local/run-compose-smoke.sh
+
+  zap-baseline:
+    if: vars.STAGING_URL != ''
+    runs-on: ubuntu-24.04
+    steps:
+      - name: OWASP ZAP baseline (advisory)
+        run: |
+          docker run --rm -v "$PWD:/zap/wrk" zaproxy/zap-stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238 \
+            zap-baseline.py -t "${{ vars.STAGING_URL }}" -r zap-report.html -I
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with: { name: zap-report, path: zap-report.html }
